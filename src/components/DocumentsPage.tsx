@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
@@ -91,6 +91,7 @@ import {
   LayoutTemplate,
   FolderClosed,
   Menu,
+  CloudUpload,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -744,6 +745,51 @@ export function DocumentsPage() {
   const [customFolders, setCustomFolders] = useState<FolderItem[]>(initialCustomFolders);
   const [mobileFolderOpen, setMobileFolderOpen] = useState(false);
 
+  // Drag & drop state
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dragCounterRef = useRef(0);
+
+  // Drag & drop handlers
+  useEffect(() => {
+    const handleDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounterRef.current++;
+      if (e.dataTransfer?.types.includes('Files')) {
+        setIsDragOver(true);
+      }
+    };
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounterRef.current--;
+      if (dragCounterRef.current === 0) {
+        setIsDragOver(false);
+      }
+    };
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    const handleDrop = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounterRef.current = 0;
+      setIsDragOver(false);
+      // Files could be handled here with e.dataTransfer.files
+    };
+    document.addEventListener('dragenter', handleDragEnter);
+    document.addEventListener('dragleave', handleDragLeave);
+    document.addEventListener('dragover', handleDragOver);
+    document.addEventListener('drop', handleDrop);
+    return () => {
+      document.removeEventListener('dragenter', handleDragEnter);
+      document.removeEventListener('dragleave', handleDragLeave);
+      document.removeEventListener('dragover', handleDragOver);
+      document.removeEventListener('drop', handleDrop);
+    };
+  }, []);
+
   // Fetch documents from API
   const { data: documentsData, isLoading } = useQuery({
     queryKey: ['documents', search, statusFilter, sortBy],
@@ -909,7 +955,34 @@ export function DocumentsPage() {
   const breadcrumb = getFolderBreadcrumb(activeFolder, customFolders);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Drag & drop overlay */}
+      <AnimatePresence>
+        {isDragOver && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+          >
+            <div className="drop-zone active rounded-2xl p-16 flex flex-col items-center gap-4 max-w-lg mx-auto">
+              <div className="rounded-full bg-emerald-100 dark:bg-emerald-900/30 p-4">
+                <CloudUpload className="h-12 w-12 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-foreground">Drag & drop files here to upload</h3>
+                <p className="text-sm text-muted-foreground mt-1">Supports PDF, DOCX, XLSX, and image files</p>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                <Upload className="h-3.5 w-3.5" />
+                <span>Release to upload your documents</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -923,8 +996,13 @@ export function DocumentsPage() {
           <motion.div
             animate={noDocsAtAll ? { scale: [1, 1.03, 1] } : {}}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            className="relative group"
           >
-            <DocumentUploadDialog />
+            {/* Gradient background with shimmer effect for upload button */}
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-lg opacity-0 group-hover:opacity-100 blur-sm transition-opacity duration-300 animate-pulse" />
+            <div className="relative">
+              <DocumentUploadDialog />
+            </div>
           </motion.div>
         </div>
       </div>

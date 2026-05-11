@@ -21,6 +21,9 @@ import {
   Keyboard,
   BarChart3,
   Bell,
+  GitMerge,
+  Calendar,
+  Archive,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +44,8 @@ const navGroups = [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { id: 'inbox', label: 'Inbox', icon: Inbox, badge: 'inbox' },
       { id: 'documents', label: 'Documents', icon: FileText, badge: 'docs' },
+      { id: 'calendar', label: 'Calendar', icon: Calendar },
+      { id: 'archive', label: 'Archive', icon: Archive },
       { id: 'contacts', label: 'Contacts', icon: Users },
       { id: 'notifications', label: 'Notifications', icon: Bell },
     ],
@@ -50,6 +55,7 @@ const navGroups = [
     items: [
       { id: 'templates', label: 'Templates', icon: LayoutTemplate },
       { id: 'workflow-builder', label: 'Workflows', icon: GitBranch },
+      { id: 'approval-chains', label: 'Approvals', icon: GitMerge },
       { id: 'audit-logs', label: 'Audit Logs', icon: ShieldCheck },
       { id: 'reports', label: 'Reports', icon: BarChart3 },
     ],

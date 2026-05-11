@@ -149,6 +149,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [scrollY, setScrollY] = useState(0);
   const leftPanelRef = useRef<HTMLDivElement>(null);
 
   // Parallax effect on mouse move
@@ -165,14 +166,21 @@ export function LoginPage() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Compute icon positions with parallax
+  // Parallax effect on scroll for left panel decorative elements
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Compute icon positions with parallax (mouse + scroll)
   const iconPositions = useMemo(() => {
     return floatingIcons.map((item) => ({
       ...item,
       px: item.x + mousePos.x * item.parallaxFactor * 100,
-      py: item.y + mousePos.y * item.parallaxFactor * 100,
+      py: item.y + mousePos.y * item.parallaxFactor * 100 + scrollY * item.parallaxFactor * 0.5,
     }));
-  }, [mousePos]);
+  }, [mousePos, scrollY]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,7 +222,7 @@ export function LoginPage() {
         {/* Grid pattern overlay */}
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-40" />
 
-        {/* Floating decorative shapes (circles & hexagons) */}
+        {/* Floating decorative shapes (circles & hexagons) with scroll parallax */}
         {floatingShapes.map((shape, i) => (
           <motion.div
             key={`shape-${i}`}
@@ -224,6 +232,7 @@ export function LoginPage() {
               top: shape.y,
               width: shape.size,
               height: shape.size,
+              transform: `translateY(${scrollY * (0.02 + i * 0.01)}px)`,
             }}
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{
@@ -427,6 +436,17 @@ export function LoginPage() {
 
           {/* Login Card with shimmer sweep */}
           <div className="glass-card rounded-2xl p-8 card-shadow-premium relative overflow-hidden card-shimmer-sweep">
+            {/* Organization logo placeholder */}
+            <div className="flex items-center gap-2.5 mb-6 pb-5 border-b border-border/50">
+              <div className="rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 p-2 shadow-md shadow-emerald-500/20">
+                <FileSignature className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <span className="text-sm font-bold tracking-tight">Acme Corp</span>
+                <span className="block text-[10px] text-muted-foreground font-medium">Enterprise Workspace</span>
+              </div>
+            </div>
+
             <div className="mb-8">
               <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
               <p className="text-muted-foreground mt-1">
@@ -488,7 +508,7 @@ export function LoginPage() {
                   }`}>
                     {rememberMe && <Check className="h-3 w-3 text-white" />}
                   </div>
-                  <span className="text-xs text-muted-foreground">Remember me</span>
+                  <span className="text-xs text-muted-foreground">Remember me for 30 days</span>
                 </div>
               </div>
               {/* Sign In button with shimmer */}
@@ -567,8 +587,11 @@ export function LoginPage() {
                     transition={{ delay: 0.1 + i * 0.05, duration: 0.3 }}
                     whileHover={{ scale: 1.04, y: -2 }}
                     whileTap={{ scale: 0.97 }}
-                    className="flex flex-col items-start rounded-lg border border-border bg-background px-3 py-2.5 text-left hover:shadow-md hover:border-emerald-500/30 transition-all duration-200 disabled:opacity-50 relative overflow-hidden group micro-glow"
+                    className="flex flex-col items-start rounded-lg border border-border bg-background pl-4 pr-3 py-2.5 text-left hover:shadow-md hover:border-emerald-500/30 transition-all duration-200 disabled:opacity-50 relative overflow-hidden group micro-glow"
+                    style={{ borderLeft: `3px solid`, borderLeftColor: `var(--tw-gradient-from, #10b981)` }}
                   >
+                    {/* Gradient left border indicator */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b ${account.color} opacity-60 group-hover:opacity-100 transition-opacity`} />
                     <div className={`absolute inset-0 bg-gradient-to-r ${account.color} opacity-0 group-hover:opacity-[0.07] transition-opacity duration-300`} />
                     <span className="text-sm font-medium relative z-10">{account.label}</span>
                     <span className="text-[11px] text-muted-foreground relative z-10">{account.desc}</span>
@@ -601,10 +624,23 @@ export function LoginPage() {
             </div>
           </motion.div>
 
+          {/* Trouble signing in link */}
+          <div className="mt-4 text-center">
+            <a href="#" className="text-xs text-muted-foreground/70 hover:text-primary link-underline transition-colors">
+              Trouble signing in?
+            </a>
+          </div>
+
           <p className="mt-3 text-center text-xs text-muted-foreground">
             By signing in, you agree to the internal use policy. <br />
             This platform is for authorized employees only.
           </p>
+
+          {/* Powered by DocuSign Enterprise */}
+          <div className="mt-6 pt-4 border-t border-border/50 flex items-center justify-center gap-1.5">
+            <FileSignature className="h-3 w-3 text-muted-foreground/40" />
+            <span className="text-[10px] text-muted-foreground/40 font-medium tracking-wider uppercase">Powered by DocuSign Enterprise</span>
+          </div>
         </motion.div>
       </div>
     </div>

@@ -24,6 +24,9 @@ import { NotificationCenterPage } from '@/components/NotificationCenterPage';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { KeyboardShortcutsDialog } from '@/components/KeyboardShortcutsDialog';
 import { OnboardingTour } from '@/components/OnboardingTour';
+import { CalendarPage } from '@/components/CalendarPage';
+import { ApprovalChainsPage } from '@/components/ApprovalChainsPage';
+import { ArchivePage } from '@/components/ArchivePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -140,6 +143,12 @@ function AppContent() {
         return <SettingsPage />;
       case 'workflow-builder':
         return <WorkflowBuilderPage />;
+      case 'approval-chains':
+        return <ApprovalChainsPage />;
+      case 'calendar':
+        return <CalendarPage />;
+      case 'archive':
+        return <ArchivePage />;
       default:
         return <DashboardPage />;
     }
