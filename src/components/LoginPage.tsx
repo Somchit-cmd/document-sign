@@ -18,7 +18,7 @@ const demoAccounts = [
   { email: 'emp1@company.com', label: 'Employee', desc: 'Sign & view docs', color: 'from-emerald-500 to-cyan-600' },
 ];
 
-// Floating background icons
+// Floating background icons - expanded with more variety
 const floatingIcons = [
   { icon: '📄', x: '15%', y: '20%', delay: 0, duration: 6 },
   { icon: '✍️', x: '75%', y: '35%', delay: 1, duration: 8 },
@@ -26,6 +26,20 @@ const floatingIcons = [
   { icon: '🔐', x: '80%', y: '75%', delay: 0.5, duration: 9 },
   { icon: '📝', x: '50%', y: '15%', delay: 3, duration: 6.5 },
   { icon: '🤝', x: '60%', y: '80%', delay: 1.5, duration: 7.5 },
+  { icon: '📜', x: '10%', y: '50%', delay: 2.5, duration: 8.5 },
+  { icon: '🖊️', x: '85%', y: '50%', delay: 0.8, duration: 7.2 },
+  { icon: '🗂️', x: '40%', y: '88%', delay: 1.8, duration: 6.8 },
+  { icon: '🔏', x: '70%', y: '12%', delay: 3.2, duration: 8.2 },
+];
+
+// Floating decorative shapes
+const floatingShapes = [
+  { type: 'circle', x: '8%', y: '30%', size: 60, color: 'bg-emerald-400/10', delay: 0, duration: 14 },
+  { type: 'hexagon', x: '88%', y: '20%', size: 40, color: 'bg-teal-400/10', delay: 2, duration: 16 },
+  { type: 'circle', x: '65%', y: '70%', size: 50, color: 'bg-cyan-400/10', delay: 4, duration: 12 },
+  { type: 'hexagon', x: '20%', y: '85%', size: 35, color: 'bg-emerald-300/8', delay: 1, duration: 18 },
+  { type: 'circle', x: '92%', y: '60%', size: 30, color: 'bg-teal-300/10', delay: 3, duration: 15 },
+  { type: 'circle', x: '35%', y: '8%', size: 25, color: 'bg-cyan-300/8', delay: 5, duration: 13 },
 ];
 
 // Particle dots with deterministic positions (to avoid hydration mismatch)
@@ -36,9 +50,11 @@ const particlePositions = [
   { left: '65%', top: '15%' }, { left: '45%', top: '55%' },
   { left: '80%', top: '70%' }, { left: '20%', top: '85%' },
   { left: '55%', top: '30%' }, { left: '70%', top: '60%' },
+  { left: '5%', top: '55%' }, { left: '95%', top: '35%' },
+  { left: '40%', top: '10%' }, { left: '60%', top: '90%' },
 ];
-const particleDelays = [0, 0.8, 1.6, 2.4, 3.2, 0.4, 1.2, 2.0, 2.8, 3.6, 1.0, 1.8];
-const particleDurations = [6, 8, 7, 9, 6.5, 7.5, 8.5, 6.8, 7.2, 9.5, 6.3, 8.2];
+const particleDelays = [0, 0.8, 1.6, 2.4, 3.2, 0.4, 1.2, 2.0, 2.8, 3.6, 1.0, 1.8, 0.6, 2.2, 3.0, 1.4];
+const particleDurations = [6, 8, 7, 9, 6.5, 7.5, 8.5, 6.8, 7.2, 9.5, 6.3, 8.2, 7.8, 6.5, 9.0, 7.0];
 
 // Typing effect component
 function TypingEffect({ text, speed = 50 }: { text: string; speed?: number }) {
@@ -106,10 +122,39 @@ export function LoginPage() {
           <div className="absolute bottom-1/4 right-1/4 w-48 h-48 border border-emerald-300/20 rounded-full animate-geometric-rotate" style={{ animationDuration: '30s' }} />
         </div>
 
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-40" />
+        {/* Dot grid pattern overlay */}
+        <div className="absolute inset-0 dot-grid-bg opacity-30" />
 
-        {/* Floating document/signature icons */}
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-40" />
+
+        {/* Floating decorative shapes (circles & hexagons) */}
+        {floatingShapes.map((shape, i) => (
+          <motion.div
+            key={`shape-${i}`}
+            className={`absolute ${shape.color} ${shape.type === 'hexagon' ? 'hexagon' : 'rounded-full'}`}
+            style={{
+              left: shape.x,
+              top: shape.y,
+              width: shape.size,
+              height: shape.size,
+            }}
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{
+              opacity: [0.08, 0.15, 0.08],
+              scale: [0.95, 1.05, 0.95],
+              y: [0, -20, 5, -10, 0],
+            }}
+            transition={{
+              delay: shape.delay,
+              duration: shape.duration,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
+
+        {/* Floating document/signature/contract icons */}
         {floatingIcons.map((item, i) => (
           <motion.div
             key={i}
@@ -146,9 +191,9 @@ export function LoginPage() {
               scale: [1, 1.2, 0.8, 0],
             }}
             transition={{
-              duration: particleDurations[i],
+              duration: particleDurations[i] || 7,
               repeat: Infinity,
-              delay: particleDelays[i],
+              delay: particleDelays[i] || 0,
               ease: 'easeOut',
             }}
           />
@@ -241,12 +286,15 @@ export function LoginPage() {
       </div>
 
       {/* Right side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-background">
+      <div className="flex-1 flex items-center justify-center p-6 bg-background relative">
+        {/* Subtle dot grid on right side */}
+        <div className="absolute inset-0 dot-grid-bg opacity-[0.03] dark:opacity-[0.02]" />
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="w-full max-w-md"
+          className="w-full max-w-md relative z-10"
         >
           {/* Mobile logo */}
           <div className="flex items-center gap-2 mb-8 lg:hidden">
@@ -257,153 +305,180 @@ export function LoginPage() {
             </div>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
-            <p className="text-muted-foreground mt-1">
-              Sign in with your corporate account to continue
-            </p>
-          </div>
-
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
-            >
-              {error}
-            </motion.div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+          {/* Login Card with glassmorphism */}
+          <div className="glass-card rounded-2xl p-8 card-shadow-premium">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+              <p className="text-muted-foreground mt-1">
+                Sign in with your corporate account to continue
+              </p>
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <button type="button" className="text-xs text-primary hover:underline">
-                  Forgot password?
-                </button>
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              <div
-                className="flex items-center gap-2 cursor-pointer select-none"
-                onClick={() => setRememberMe(!rememberMe)}
+
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
               >
-                <div className={`h-4 w-4 rounded border flex items-center justify-center transition-all duration-200 ${
-                  rememberMe ? 'bg-emerald-600 border-emerald-600' : 'border-muted-foreground/40 hover:border-emerald-500'
-                }`}>
-                  {rememberMe && <Check className="h-3 w-3 text-white" />}
+                {error}
+              </motion.div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10 focus-ring-animate"
+                  />
                 </div>
-                <span className="text-xs text-muted-foreground">Remember me</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <button type="button" className="text-xs text-primary hover:underline">
+                    Forgot password?
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 focus-ring-animate"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <div
+                  className="flex items-center gap-2 cursor-pointer select-none"
+                  onClick={() => setRememberMe(!rememberMe)}
+                >
+                  <div className={`h-4 w-4 rounded border flex items-center justify-center transition-all duration-200 ${
+                    rememberMe ? 'bg-emerald-600 border-emerald-600' : 'border-muted-foreground/40 hover:border-emerald-500'
+                  }`}>
+                    {rememberMe && <Check className="h-3 w-3 text-white" />}
+                  </div>
+                  <span className="text-xs text-muted-foreground">Remember me</span>
+                </div>
+              </div>
+              {/* Sign In button with shimmer */}
+              <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 btn-click-scale relative overflow-hidden animate-btn-shimmer" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+                {isLoading && (
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600"
+                    initial={{ x: '-100%' }}
+                    animate={{ x: '100%' }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                    style={{ opacity: 0.3 }}
+                  />
+                )}
+              </Button>
+            </form>
+
+            <div className="relative my-6">
+              <Separator />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 text-xs text-muted-foreground">
+                Or continue with SSO
+              </span>
+            </div>
+
+            {/* SSO Buttons with brand colors */}
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <Button
+                variant="outline"
+                className="w-full btn-click-scale group hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] hover:border-blue-500/40 transition-all duration-300 h-11"
+                onClick={() => handleDemoLogin('admin@company.com')}
+              >
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
+                <span className="text-xs">Microsoft</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full btn-click-scale group hover:shadow-[0_0_20px_rgba(234,67,53,0.12)] hover:border-red-400/30 transition-all duration-300 h-11"
+                onClick={() => handleDemoLogin('admin@company.com')}
+              >
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                <span className="text-xs">Google</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full btn-click-scale group hover:shadow-[0_0_20px_rgba(139,92,246,0.2)] hover:border-purple-500/40 transition-all duration-300 h-11"
+                onClick={() => handleDemoLogin('admin@company.com')}
+              >
+                <svg className="mr-2 h-4 w-4 text-purple-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121L8.32 13.617l-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.94z"/></svg>
+                <span className="text-xs">LDAP</span>
+              </Button>
+            </div>
+
+            {/* Demo Accounts with scale + glow */}
+            <div className="rounded-xl border border-border bg-gradient-to-b from-muted/30 to-muted/10 p-4 backdrop-blur-sm">
+              <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
+                Quick Demo Access
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {demoAccounts.map((account, i) => (
+                  <motion.button
+                    key={account.email}
+                    onClick={() => handleDemoLogin(account.email)}
+                    disabled={isLoading}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + i * 0.05, duration: 0.3 }}
+                    whileHover={{ scale: 1.04, y: -2 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex flex-col items-start rounded-lg border border-border bg-background px-3 py-2.5 text-left hover:shadow-md hover:border-emerald-500/30 transition-all duration-200 disabled:opacity-50 relative overflow-hidden group micro-glow"
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-r ${account.color} opacity-0 group-hover:opacity-[0.07] transition-opacity duration-300`} />
+                    <span className="text-sm font-medium relative z-10">{account.label}</span>
+                    <span className="text-[11px] text-muted-foreground relative z-10">{account.desc}</span>
+                  </motion.button>
+                ))}
               </div>
             </div>
-            <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 btn-click-scale relative overflow-hidden" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign In'
-              )}
-              {isLoading && (
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600"
-                  initial={{ x: '-100%' }}
-                  animate={{ x: '100%' }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                  style={{ opacity: 0.3 }}
-                />
-              )}
-            </Button>
-          </form>
-
-          <div className="relative my-6">
-            <Separator />
-            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-3 text-xs text-muted-foreground">
-              Or continue with SSO
-            </span>
           </div>
 
-          {/* SSO Buttons with hover glow */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <Button
-              variant="outline"
-              className="w-full btn-click-scale group hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:border-emerald-500/40 transition-all duration-300 h-11"
-              onClick={() => handleDemoLogin('admin@company.com')}
-            >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
-              <span className="text-xs">Microsoft</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full btn-click-scale group hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:border-emerald-500/40 transition-all duration-300 h-11"
-              onClick={() => handleDemoLogin('admin@company.com')}
-            >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-              <span className="text-xs">Google</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full btn-click-scale group hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:border-emerald-500/40 transition-all duration-300 h-11"
-              onClick={() => handleDemoLogin('admin@company.com')}
-            >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121L8.32 13.617l-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.94z"/></svg>
-              <span className="text-xs">LDAP</span>
-            </Button>
-          </div>
-
-          {/* Demo Accounts with hover scale */}
-          <div className="rounded-xl border border-border bg-gradient-to-b from-muted/30 to-muted/10 p-4 backdrop-blur-sm">
-            <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-              Quick Demo Access
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {demoAccounts.map((account, i) => (
-                <motion.button
-                  key={account.email}
-                  onClick={() => handleDemoLogin(account.email)}
-                  disabled={isLoading}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + i * 0.05, duration: 0.3 }}
-                  whileHover={{ scale: 1.03, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex flex-col items-start rounded-lg border border-border bg-background px-3 py-2.5 text-left hover:shadow-md hover:border-emerald-500/30 transition-all duration-200 disabled:opacity-50 relative overflow-hidden group"
-                >
-                  <div className={`absolute inset-0 bg-gradient-to-r ${account.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
-                  <span className="text-sm font-medium relative z-10">{account.label}</span>
-                  <span className="text-[11px] text-muted-foreground relative z-10">{account.desc}</span>
-                </motion.button>
-              ))}
+          {/* Security / Compliance badge at bottom of card */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.5 }}
+            className="mt-5 flex items-center justify-center gap-3 text-[10px] text-muted-foreground/60"
+          >
+            <div className="flex items-center gap-1">
+              <Shield className="h-3 w-3" />
+              <span>SOC 2 Type II</span>
             </div>
-          </div>
+            <span className="text-muted-foreground/30">·</span>
+            <div className="flex items-center gap-1">
+              <LockKeyhole className="h-3 w-3" />
+              <span>256-bit AES</span>
+            </div>
+            <span className="text-muted-foreground/30">·</span>
+            <div className="flex items-center gap-1">
+              <Globe className="h-3 w-3" />
+              <span>GDPR Ready</span>
+            </div>
+          </motion.div>
 
-          <p className="mt-4 text-center text-xs text-muted-foreground">
+          <p className="mt-3 text-center text-xs text-muted-foreground">
             By signing in, you agree to the internal use policy. <br />
             This platform is for authorized employees only.
           </p>

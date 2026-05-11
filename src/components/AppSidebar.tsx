@@ -18,6 +18,8 @@ import {
   FileSignature,
   Sparkles,
   GitBranch,
+  Keyboard,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +49,7 @@ const navGroups = [
       { id: 'templates', label: 'Templates', icon: LayoutTemplate },
       { id: 'workflow-builder', label: 'Workflows', icon: GitBranch },
       { id: 'audit-logs', label: 'Audit Logs', icon: ShieldCheck },
+      { id: 'reports', label: 'Reports', icon: BarChart3 },
     ],
   },
   {
@@ -59,7 +62,7 @@ const navGroups = [
 ];
 
 export function AppSidebar() {
-  const { currentPage, navigate, sidebarOpen, toggleSidebar } = useAppStore();
+  const { currentPage, navigate, sidebarOpen, toggleSidebar, setKeyboardShortcutsOpen } = useAppStore();
 
   // Fetch document count for badge
   const { data: docsData } = useQuery({
@@ -208,6 +211,35 @@ export function AppSidebar() {
       </nav>
 
       <div className="border-t border-border p-2">
+        <TooltipProvider delayDuration={0}>
+          {sidebarOpen ? (
+            <motion.button
+              onClick={() => setKeyboardShortcutsOpen(true)}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200 mb-1"
+              whileTap={{ scale: 0.98 }}
+            >
+              <Keyboard className="h-5 w-5 shrink-0" />
+              <span className="truncate flex-1 text-left">Keyboard Shortcuts</span>
+              <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1 font-mono text-[10px] font-medium text-muted-foreground">
+                ⌘/
+              </kbd>
+            </motion.button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <motion.button
+                  onClick={() => setKeyboardShortcutsOpen(true)}
+                  className="flex w-full items-center justify-center rounded-lg p-2.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200 mb-1"
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Keyboard className="h-5 w-5" />
+                </motion.button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Keyboard Shortcuts</TooltipContent>
+            </Tooltip>
+          )}
+        </TooltipProvider>
+        <Separator className="mb-2" />
         <Button
           variant="ghost"
           size="sm"
@@ -222,7 +254,7 @@ export function AppSidebar() {
 }
 
 export function MobileSidebar() {
-  const { currentPage, navigate } = useAppStore();
+  const { currentPage, navigate, setKeyboardShortcutsOpen } = useAppStore();
 
   return (
     <Sheet>
@@ -271,6 +303,18 @@ export function MobileSidebar() {
             </div>
           ))}
         </nav>
+        <div className="border-t border-border mt-2 pt-2 px-2">
+          <button
+            onClick={() => setKeyboardShortcutsOpen(true)}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all"
+          >
+            <Keyboard className="h-5 w-5 shrink-0" />
+            <span>Keyboard Shortcuts</span>
+            <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1 font-mono text-[10px] font-medium text-muted-foreground">
+              ⌘/
+            </kbd>
+          </button>
+        </div>
       </SheetContent>
     </Sheet>
   );

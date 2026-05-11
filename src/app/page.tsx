@@ -19,7 +19,9 @@ import { SettingsPage } from '@/components/SettingsPage';
 import { WorkflowBuilderPage } from '@/components/WorkflowBuilderPage';
 import { AIAssistant } from '@/components/AIAssistant';
 import { ContactsPage } from '@/components/ContactsPage';
+import { ReportsPage } from '@/components/ReportsPage';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { KeyboardShortcutsDialog } from '@/components/KeyboardShortcutsDialog';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,11 +33,78 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const { isAuthenticated, currentPage, checkAuth } = useAppStore();
+  const { isAuthenticated, currentPage, checkAuth, setKeyboardShortcutsOpen, navigate } = useAppStore();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  // Global keyboard shortcut handler
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let gKeyPressed = false;
+    let gKeyTimeout: ReturnType<typeof setTimeout>;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // ⌘/ or Ctrl+/ to open keyboard shortcuts
+      if (e.key === '/' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setKeyboardShortcutsOpen(true);
+        return;
+      }
+
+      // G then X shortcuts for navigation (only when not in an input)
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
+      if (isInput) return;
+
+      if (e.key === 'g' || e.key === 'G') {
+        if (gKeyPressed) return;
+        gKeyPressed = true;
+        clearTimeout(gKeyTimeout);
+        gKeyTimeout = setTimeout(() => {
+          gKeyPressed = false;
+        }, 1000);
+        return;
+      }
+
+      if (gKeyPressed) {
+        clearTimeout(gKeyTimeout);
+        gKeyPressed = false;
+
+        const keyMap: Record<string, string> = {
+          'd': 'dashboard',
+          'D': 'dashboard',
+          'i': 'inbox',
+          'I': 'inbox',
+          'o': 'documents',
+          'O': 'documents',
+          't': 'templates',
+          'T': 'templates',
+          'a': 'admin',
+          'A': 'admin',
+          's': 'settings',
+          'S': 'settings',
+          'l': 'audit-logs',
+          'L': 'audit-logs',
+        };
+
+        const page = keyMap[e.key];
+        if (page) {
+          e.preventDefault();
+          navigate(page);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(gKeyTimeout);
+    };
+  }, [isAuthenticated, setKeyboardShortcutsOpen, navigate]);
 
   if (!isAuthenticated) {
     return <LoginPage />;
@@ -59,6 +128,8 @@ function AppContent() {
         return <AuditLogsPage />;
       case 'contacts':
         return <ContactsPage />;
+      case 'reports':
+        return <ReportsPage />;
       case 'admin':
         return <AdminPage />;
       case 'settings':
@@ -80,6 +151,7 @@ function AppContent() {
       <ErrorBoundary>
         <AIAssistant />
       </ErrorBoundary>
+      <KeyboardShortcutsDialog />
     </AppLayout>
   );
 }

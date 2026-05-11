@@ -129,7 +129,7 @@ export function StatCard({ title, value, trend, icon, className, variant = 'defa
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
       <Card className={cn(
-        'card-hover-lift border rounded-xl overflow-hidden',
+        'card-hover-lift gradient-border-hover border rounded-xl overflow-hidden',
         styles.border,
         'bg-gradient-to-br',
         styles.gradient,

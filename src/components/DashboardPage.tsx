@@ -418,6 +418,21 @@ const itemVariants = {
 // Main Dashboard Page
 // ============================================================
 
+// Time-of-day greeting helper
+function getTimeGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function getTimeEmoji(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return '☀️';
+  if (hour < 17) return '🌤️';
+  return '🌙';
+}
+
 export function DashboardPage() {
   const { navigate, user } = useAppStore();
   const [currentTime, setCurrentTime] = useState(now);
@@ -528,7 +543,7 @@ export function DashboardPage() {
       >
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            Welcome back, {user?.name?.split(' ')[0] || 'User'} 👋
+            {getTimeGreeting()}, {user?.name?.split(' ')[0] || 'User'} {getTimeEmoji()}
           </h1>
           <p className="text-muted-foreground mt-1">
             Here&apos;s what&apos;s happening with your documents today.
@@ -551,7 +566,7 @@ export function DashboardPage() {
         initial={{ opacity: 0, y: -5 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.3 }}
-        className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-cyan-50/80 dark:from-emerald-950/20 dark:via-teal-950/10 dark:to-cyan-950/20 border border-emerald-200/50 dark:border-emerald-900/30"
+        className="glass-card flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-cyan-50/80 dark:from-emerald-950/20 dark:via-teal-950/10 dark:to-cyan-950/20 border border-emerald-200/50 dark:border-emerald-900/30 card-shadow-premium"
       >
         {quickStatsItems.map((item, i) => {
           const Icon = item.icon;
@@ -574,6 +589,48 @@ export function DashboardPage() {
             </motion.div>
           );
         })}
+      </motion.div>
+
+      {/* Today's Summary compact card */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.3 }}
+        className="flex items-center gap-4 px-4 py-2.5 rounded-lg border border-border bg-card/50 backdrop-blur-sm"
+      >
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">Today&apos;s Summary</span>
+        </div>
+        <div className="h-4 w-px bg-border" />
+        <div className="flex items-center gap-1.5">
+          <FileText className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+          <span className="text-xs"><span className="font-semibold">7</span> created</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <FileSignature className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
+          <span className="text-xs"><span className="font-semibold">12</span> signed</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <CheckCircle2 className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
+          <span className="text-xs"><span className="font-semibold">5</span> completed</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+          <span className="text-xs"><span className="font-semibold">2</span> expiring</span>
+        </div>
+        {/* Mini sparkline visualization */}
+        <div className="ml-auto hidden sm:flex items-center gap-0.5">
+          {[3, 5, 4, 7, 6, 8, 7, 9, 8, 10, 9, 12].map((v, i) => (
+            <motion.div
+              key={i}
+              className="w-1 rounded-full bg-emerald-400/60"
+              initial={{ height: 0 }}
+              animate={{ height: `${(v / 12) * 16 + 2}px` }}
+              transition={{ delay: 0.3 + i * 0.04, duration: 0.4, ease: 'easeOut' }}
+            />
+          ))}
+        </div>
       </motion.div>
 
       {/* Stat Cards with View Details */}
@@ -674,20 +731,25 @@ export function DashboardPage() {
             View all <ArrowRight className="ml-1 h-3 w-3" />
           </Button>
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
-          {recentDocs.slice(0, 6).map((doc, i) => (
-            <motion.div
-              key={doc.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.15 + i * 0.06, duration: 0.3 }}
-              whileHover={{ y: -3 }}
-              className="shrink-0 w-52"
-            >
-              <button
-                onClick={() => navigate('document-detail', { id: doc.id })}
-                className="w-full text-left rounded-xl border border-border bg-card p-3 hover:shadow-md transition-all group"
+        <div className="relative">
+          {/* Left gradient fade */}
+          <div className="absolute left-0 top-0 bottom-2 w-4 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+          {/* Right gradient fade */}
+          <div className="absolute right-0 top-0 bottom-2 w-4 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scroll-smooth-x scroll-fade-edges">
+            {recentDocs.slice(0, 6).map((doc, i) => (
+              <motion.div
+                key={doc.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.15 + i * 0.06, duration: 0.3 }}
+                whileHover={{ y: -4 }}
+                className="shrink-0 w-52"
               >
+                <button
+                  onClick={() => navigate('document-detail', { id: doc.id })}
+                  className="w-full text-left rounded-xl border border-border bg-card p-3 hover:shadow-lg card-shadow-premium gradient-border-hover transition-all group"
+                >
                 <div className="flex items-center gap-2 mb-2">
                   <div className="rounded-md bg-primary/10 p-1.5 shrink-0">
                     <FileText className="h-3.5 w-3.5 text-primary" />
@@ -705,6 +767,7 @@ export function DashboardPage() {
               </button>
             </motion.div>
           ))}
+        </div>
         </div>
       </motion.div>
 

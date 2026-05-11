@@ -37,6 +37,10 @@ interface AppStore {
   // Theme
   theme: 'light' | 'dark' | 'system';
   setTheme: (theme: string) => void;
+
+  // Keyboard Shortcuts Dialog
+  keyboardShortcutsOpen: boolean;
+  setKeyboardShortcutsOpen: (open: boolean) => void;
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -276,6 +280,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
         }
       }
     }
+  },
+
+  // Keyboard Shortcuts Dialog
+  keyboardShortcutsOpen: false,
+
+  setKeyboardShortcutsOpen: (open: boolean) => {
+    set({ keyboardShortcutsOpen: open });
   },
 }));
 

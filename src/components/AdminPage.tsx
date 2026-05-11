@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { api, mockUsers, mockDepartments } from '@/lib/api';
 import type { User, UserRole, Department } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -67,6 +68,34 @@ import {
   ChevronRight,
   ChevronDown,
   Workflow,
+  Settings,
+  Globe,
+  Lock,
+  Mail,
+  Database,
+  Plug,
+  Send,
+  Shield,
+  FileClock,
+  Languages,
+  Bell,
+  KeyRound,
+  Fingerprint,
+  Timer,
+  Network,
+  Droplets,
+  Cloud,
+  HardDriveUpload,
+  Archive,
+  CloudCog,
+  Chrome,
+  Hash,
+  LayoutDashboard,
+  ClipboardList,
+  Download,
+  Save,
+  CircleCheck,
+  CircleX,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -90,6 +119,38 @@ import { RoleBadge } from './RoleBadge';
 import { StatusBadge } from './StatusBadge';
 import { toast } from 'sonner';
 
+// ========= Quick Actions =========
+function QuickActions() {
+  const actions = [
+    { label: 'Invite User', icon: UserPlus, color: 'from-emerald-500 to-teal-600', hoverShadow: 'hover:shadow-emerald-500/25' },
+    { label: 'Create Workflow', icon: Workflow, color: 'from-cyan-500 to-blue-600', hoverShadow: 'hover:shadow-cyan-500/25' },
+    { label: 'View Audit Logs', icon: ClipboardList, color: 'from-amber-500 to-orange-600', hoverShadow: 'hover:shadow-amber-500/25' },
+    { label: 'System Backup', icon: Download, color: 'from-teal-500 to-emerald-600', hoverShadow: 'hover:shadow-teal-500/25' },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {actions.map((action) => {
+        const Icon = action.icon;
+        return (
+          <motion.button
+            key={action.label}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            className={`group relative flex items-center gap-3 rounded-xl border border-border bg-card p-4 text-left transition-all duration-200 hover:border-primary/30 ${action.hoverShadow} hover:shadow-lg`}
+            onClick={() => toast.info(`${action.label} action triggered`)}
+          >
+            <div className={`rounded-lg bg-gradient-to-br ${action.color} p-2.5 text-white shadow-md`}>
+              <Icon className="h-4 w-4" />
+            </div>
+            <span className="text-sm font-medium">{action.label}</span>
+          </motion.button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ========= Dashboard Overview =========
 function DashboardOverview() {
   const { data: statsData } = useQuery({
@@ -103,25 +164,30 @@ function DashboardOverview() {
   });
 
   const stats = [
-    { title: 'Total Users', value: statsData?.totalDocuments ?? 11, icon: Users, color: 'bg-emerald-100 dark:bg-emerald-900/30', iconColor: 'text-emerald-600 dark:text-emerald-400', trend: '+3', trendUp: true },
-    { title: 'Active Documents', value: statsData?.pendingSignatures ?? 8, icon: FileText, color: 'bg-cyan-100 dark:bg-cyan-900/30', iconColor: 'text-cyan-600 dark:text-cyan-400', trend: '+12%', trendUp: true },
-    { title: 'Pending Approvals', value: statsData?.pendingApprovals ?? 4, icon: ShieldCheck, color: 'bg-amber-100 dark:bg-amber-900/30', iconColor: 'text-amber-600 dark:text-amber-400', trend: '-2', trendUp: false },
-    { title: 'Completed Today', value: statsData?.completedThisMonth ?? 3, icon: CheckCircle2, color: 'bg-teal-100 dark:bg-teal-900/30', iconColor: 'text-teal-600 dark:text-teal-400', trend: '+5', trendUp: true },
+    { title: 'Total Users', value: statsData?.totalDocuments ?? 11, icon: Users, gradient: 'from-emerald-500/10 to-teal-500/5', iconBg: 'from-emerald-500 to-teal-600', trend: '+3', trendUp: true, borderAccent: 'border-l-emerald-500' },
+    { title: 'Active Documents', value: statsData?.pendingSignatures ?? 8, icon: FileText, gradient: 'from-cyan-500/10 to-blue-500/5', iconBg: 'from-cyan-500 to-blue-600', trend: '+12%', trendUp: true, borderAccent: 'border-l-cyan-500' },
+    { title: 'Pending Approvals', value: statsData?.pendingApprovals ?? 4, icon: ShieldCheck, gradient: 'from-amber-500/10 to-orange-500/5', iconBg: 'from-amber-500 to-orange-600', trend: '-2', trendUp: false, borderAccent: 'border-l-amber-500' },
+    { title: 'Completed Today', value: statsData?.completedThisMonth ?? 3, icon: CheckCircle2, gradient: 'from-teal-500/10 to-emerald-500/5', iconBg: 'from-teal-500 to-emerald-600', trend: '+5', trendUp: true, borderAccent: 'border-l-teal-500' },
   ];
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {stats.map((stat) => {
+      {stats.map((stat, i) => {
         const Icon = stat.icon;
         return (
-          <motion.div key={stat.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="hover:shadow-md transition-shadow">
+          <motion.div
+            key={stat.title}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+          >
+            <Card className={`hover:shadow-lg transition-all duration-300 border-l-4 ${stat.borderAccent} backdrop-blur-sm bg-card/80 bg-gradient-to-br ${stat.gradient} group`}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <div className={`rounded-lg ${stat.color} p-2`}>
-                    <Icon className={`h-5 w-5 ${stat.iconColor}`} />
+                  <div className={`rounded-lg bg-gradient-to-br ${stat.iconBg} p-2 text-white shadow-md`}>
+                    <Icon className="h-5 w-5" />
                   </div>
-                  <div className={`flex items-center gap-0.5 text-xs ${stat.trendUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <div className={`flex items-center gap-0.5 text-xs font-medium ${stat.trendUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                     {stat.trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                     {stat.trend}
                   </div>
@@ -242,7 +308,7 @@ function UserManagement() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="border-l-4 border-l-primary/40">
           <Table>
             <TableHeader>
               <TableRow>
@@ -445,7 +511,7 @@ function DepartmentManagement() {
         </div>
         {departments.map((dept) => (
           <motion.div key={dept.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <Card className="hover:shadow-md transition-shadow">
+            <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary/40">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
@@ -628,7 +694,7 @@ function WorkflowManagement() {
       <div className="space-y-4">
         {workflows.map((wf) => (
           <motion.div key={wf.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <Card className="hover:shadow-md transition-shadow">
+            <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary/40">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -678,6 +744,569 @@ function WorkflowManagement() {
   );
 }
 
+// ========= System Configuration =========
+function SystemConfiguration() {
+  // General Settings
+  const [orgName, setOrgName] = useState('Acme Corporation');
+  const [docExpiry, setDocExpiry] = useState('30');
+  const [timezone, setTimezone] = useState('UTC');
+  const [autoReminders, setAutoReminders] = useState(true);
+  const [reminderFrequency, setReminderFrequency] = useState('3');
+  const [language, setLanguage] = useState('en');
+
+  // Security Settings
+  const [twoFactorAuth, setTwoFactorAuth] = useState(true);
+  const [passwordPolicy, setPasswordPolicy] = useState('standard');
+  const [sessionTimeout, setSessionTimeout] = useState('60');
+  const [ipWhitelist, setIpWhitelist] = useState(false);
+  const [docEncryption, setDocEncryption] = useState(true);
+  const [watermark, setWatermark] = useState(false);
+
+  // Email Settings
+  const [emailProvider, setEmailProvider] = useState('sendgrid');
+  const [fromName, setFromName] = useState('DocuSign Enterprise');
+  const [fromEmail, setFromEmail] = useState('noreply@acme.com');
+  const [replyToEmail, setReplyToEmail] = useState('support@acme.com');
+  const [emailFooter, setEmailFooter] = useState('This is an automated message from Acme Corporation. Do not reply directly to this email.');
+
+  // Storage Settings
+  const [storageProvider, setStorageProvider] = useState('s3');
+  const [bucketName, setBucketName] = useState('acme-documents-prod');
+  const [storageRegion, setStorageRegion] = useState('us-east-1');
+  const [retentionPolicy, setRetentionPolicy] = useState('3years');
+
+  // Integration Settings
+  const [ms365Connected, setMs365Connected] = useState(true);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [slackConnected, setSlackConnected] = useState(true);
+  const [salesforceConnected, setSalesforceConnected] = useState(false);
+
+  const handleSave = () => {
+    toast.success('Configuration saved successfully', {
+      description: 'All settings have been updated.',
+    });
+  };
+
+  const handleTestEmail = () => {
+    toast.success('Test email sent', {
+      description: `A test email has been sent to ${replyToEmail}`,
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* General Settings */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>
+        <Card className="border-l-4 border-l-emerald-500 hover:shadow-md transition-all duration-300">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <div className="rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 p-1.5 text-white">
+                <Globe className="h-4 w-4" />
+              </div>
+              General Settings
+            </CardTitle>
+            <CardDescription>Configure organization defaults and preferences</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  Organization Name
+                </Label>
+                <Input value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="Your organization name" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <FileClock className="h-3.5 w-3.5 text-muted-foreground" />
+                  Default Document Expiry
+                </Label>
+                <Select value={docExpiry} onValueChange={setDocExpiry}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">7 days</SelectItem>
+                    <SelectItem value="14">14 days</SelectItem>
+                    <SelectItem value="30">30 days</SelectItem>
+                    <SelectItem value="60">60 days</SelectItem>
+                    <SelectItem value="90">90 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                  Default Timezone
+                </Label>
+                <Select value={timezone} onValueChange={setTimezone}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UTC">UTC (Coordinated Universal Time)</SelectItem>
+                    <SelectItem value="EST">EST (Eastern Standard Time)</SelectItem>
+                    <SelectItem value="CST">CST (Central Standard Time)</SelectItem>
+                    <SelectItem value="MST">MST (Mountain Standard Time)</SelectItem>
+                    <SelectItem value="PST">PST (Pacific Standard Time)</SelectItem>
+                    <SelectItem value="CET">CET (Central European Time)</SelectItem>
+                    <SelectItem value="JST">JST (Japan Standard Time)</SelectItem>
+                    <SelectItem value="CST-CH">CST (China Standard Time)</SelectItem>
+                    <SelectItem value="IST">IST (India Standard Time)</SelectItem>
+                    <SelectItem value="AEST">AEST (Australian Eastern Time)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Languages className="h-3.5 w-3.5 text-muted-foreground" />
+                  Language
+                </Label>
+                <Select value={language} onValueChange={setLanguage}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="zh">Chinese (简体中文)</SelectItem>
+                    <SelectItem value="ja">Japanese (日本語)</SelectItem>
+                    <SelectItem value="ko">Korean (한국어)</SelectItem>
+                    <SelectItem value="es">Spanish (Español)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <Separator />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Bell className="h-3.5 w-3.5 text-muted-foreground" />
+                  Auto-Reminders
+                </Label>
+                <p className="text-xs text-muted-foreground">Automatically send signing reminders to recipients</p>
+              </div>
+              <div className="flex items-center gap-3">
+                {autoReminders && (
+                  <Select value={reminderFrequency} onValueChange={setReminderFrequency}>
+                    <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Every day</SelectItem>
+                      <SelectItem value="2">Every 2 days</SelectItem>
+                      <SelectItem value="3">Every 3 days</SelectItem>
+                      <SelectItem value="7">Every week</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                <Switch checked={autoReminders} onCheckedChange={setAutoReminders} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Security Settings */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+        <Card className="border-l-4 border-l-amber-500 hover:shadow-md transition-all duration-300">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <div className="rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 p-1.5 text-white">
+                <Shield className="h-4 w-4" />
+              </div>
+              Security Settings
+            </CardTitle>
+            <CardDescription>Manage authentication, encryption, and access control policies</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
+                  Password Policy
+                </Label>
+                <Select value={passwordPolicy} onValueChange={setPasswordPolicy}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="basic">Basic (8+ characters)</SelectItem>
+                    <SelectItem value="standard">Standard (8+ chars, mixed case, numbers)</SelectItem>
+                    <SelectItem value="strong">Strong (12+ chars, mixed case, numbers, symbols)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Timer className="h-3.5 w-3.5 text-muted-foreground" />
+                  Session Timeout
+                </Label>
+                <Select value={sessionTimeout} onValueChange={setSessionTimeout}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="15">15 minutes</SelectItem>
+                    <SelectItem value="30">30 minutes</SelectItem>
+                    <SelectItem value="60">1 hour</SelectItem>
+                    <SelectItem value="120">2 hours</SelectItem>
+                    <SelectItem value="never">Never</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <Fingerprint className="h-3.5 w-3.5 text-muted-foreground" />
+                    Two-Factor Authentication
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Require 2FA for all users on sign-in</p>
+                </div>
+                <Switch checked={twoFactorAuth} onCheckedChange={setTwoFactorAuth} />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <Network className="h-3.5 w-3.5 text-muted-foreground" />
+                    IP Whitelist
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Restrict access to approved IP addresses only</p>
+                </div>
+                <Switch checked={ipWhitelist} onCheckedChange={setIpWhitelist} />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                    Document Encryption
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-muted-foreground">Encrypt all documents at rest</p>
+                    {docEncryption && (
+                      <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 text-[10px] px-1.5 py-0">
+                        AES-256
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <Switch checked={docEncryption} onCheckedChange={setDocEncryption} />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <Droplets className="h-3.5 w-3.5 text-muted-foreground" />
+                    Watermark on Documents
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Apply &quot;CONFIDENTIAL&quot; watermark to all documents</p>
+                </div>
+                <Switch checked={watermark} onCheckedChange={setWatermark} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Email Settings */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <Card className="border-l-4 border-l-cyan-500 hover:shadow-md transition-all duration-300">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <div className="rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 p-1.5 text-white">
+                <Mail className="h-4 w-4" />
+              </div>
+              Email Settings
+            </CardTitle>
+            <CardDescription>Configure email delivery and notification templates</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Send className="h-3.5 w-3.5 text-muted-foreground" />
+                  Email Provider
+                </Label>
+                <Select value={emailProvider} onValueChange={setEmailProvider}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sendgrid">SendGrid</SelectItem>
+                    <SelectItem value="mailgun">Mailgun</SelectItem>
+                    <SelectItem value="aws-ses">AWS SES</SelectItem>
+                    <SelectItem value="smtp">Custom SMTP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">From Name</Label>
+                <Input value={fromName} onChange={(e) => setFromName(e.target.value)} placeholder="Sender display name" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">From Email</Label>
+                <Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} placeholder="noreply@company.com" type="email" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Reply-To Email</Label>
+                <Input value={replyToEmail} onChange={(e) => setReplyToEmail(e.target.value)} placeholder="support@company.com" type="email" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Email Footer Template</Label>
+              <Textarea
+                value={emailFooter}
+                onChange={(e) => setEmailFooter(e.target.value)}
+                placeholder="Footer text for all outgoing emails..."
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={handleTestEmail} className="gap-2">
+                <Send className="h-3.5 w-3.5" />
+                Send Test Email
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Storage Settings */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+        <Card className="border-l-4 border-l-teal-500 hover:shadow-md transition-all duration-300">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <div className="rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 p-1.5 text-white">
+                <Database className="h-4 w-4" />
+              </div>
+              Storage Settings
+            </CardTitle>
+            <CardDescription>Configure document storage, regions, and retention policies</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Cloud className="h-3.5 w-3.5 text-muted-foreground" />
+                  Storage Provider
+                </Label>
+                <Select value={storageProvider} onValueChange={setStorageProvider}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="s3">AWS S3</SelectItem>
+                    <SelectItem value="azure">Azure Blob Storage</SelectItem>
+                    <SelectItem value="gcs">Google Cloud Storage</SelectItem>
+                    <SelectItem value="minio">MinIO (Self-hosted)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Bucket Name</Label>
+                <Input value={bucketName} onChange={(e) => setBucketName(e.target.value)} placeholder="my-bucket-name" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                  Region
+                </Label>
+                <Select value={storageRegion} onValueChange={setStorageRegion}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="us-east-1">US East (N. Virginia)</SelectItem>
+                    <SelectItem value="us-west-2">US West (Oregon)</SelectItem>
+                    <SelectItem value="eu-west-1">EU (Ireland)</SelectItem>
+                    <SelectItem value="eu-central-1">EU (Frankfurt)</SelectItem>
+                    <SelectItem value="ap-southeast-1">Asia Pacific (Singapore)</SelectItem>
+                    <SelectItem value="ap-northeast-1">Asia Pacific (Tokyo)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Archive className="h-3.5 w-3.5 text-muted-foreground" />
+                  File Retention Policy
+                </Label>
+                <Select value={retentionPolicy} onValueChange={setRetentionPolicy}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1year">1 year</SelectItem>
+                    <SelectItem value="3years">3 years</SelectItem>
+                    <SelectItem value="5years">5 years</SelectItem>
+                    <SelectItem value="never">Never delete</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Storage Usage */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <HardDriveUpload className="h-3.5 w-3.5 text-muted-foreground" />
+                  Storage Usage
+                </Label>
+                <span className="text-sm text-muted-foreground">23.4 GB / 100 GB</span>
+              </div>
+              <Progress value={23.4} className="h-2.5" />
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>76.6 GB available</span>
+                <span>23.4% used</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Integration Settings */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+        <Card className="border-l-4 border-l-purple-500 hover:shadow-md transition-all duration-300">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <div className="rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 p-1.5 text-white">
+                <Plug className="h-4 w-4" />
+              </div>
+              Integration Settings
+            </CardTitle>
+            <CardDescription>Connect third-party services and manage integration status</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Microsoft 365 */}
+            <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/20 hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-blue-100 dark:bg-blue-900/30 p-2">
+                  <CloudCog className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Microsoft 365</p>
+                  <p className="text-xs text-muted-foreground">SharePoint, Outlook, Teams integration</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge className={ms365Connected ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-0'}>
+                  {ms365Connected ? (
+                    <><CircleCheck className="h-3 w-3 mr-1" />Connected</>
+                  ) : (
+                    <><CircleX className="h-3 w-3 mr-1" />Disconnected</>
+                  )}
+                </Badge>
+                <Button
+                  variant={ms365Connected ? 'outline' : 'default'}
+                  size="sm"
+                  onClick={() => {
+                    setMs365Connected(!ms365Connected);
+                    toast.success(ms365Connected ? 'Microsoft 365 disconnected' : 'Microsoft 365 connected');
+                  }}
+                >
+                  {ms365Connected ? 'Disconnect' : 'Connect'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Google Workspace */}
+            <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/20 hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-red-100 dark:bg-red-900/30 p-2">
+                  <Chrome className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Google Workspace</p>
+                  <p className="text-xs text-muted-foreground">Google Drive, Gmail, Calendar integration</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge className={googleConnected ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-0'}>
+                  {googleConnected ? (
+                    <><CircleCheck className="h-3 w-3 mr-1" />Connected</>
+                  ) : (
+                    <><CircleX className="h-3 w-3 mr-1" />Disconnected</>
+                  )}
+                </Badge>
+                <Button
+                  variant={googleConnected ? 'outline' : 'default'}
+                  size="sm"
+                  onClick={() => {
+                    setGoogleConnected(!googleConnected);
+                    toast.success(googleConnected ? 'Google Workspace disconnected' : 'Google Workspace connected');
+                  }}
+                >
+                  {googleConnected ? 'Disconnect' : 'Connect'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Slack */}
+            <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/20 hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-purple-100 dark:bg-purple-900/30 p-2">
+                  <Hash className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Slack</p>
+                  <p className="text-xs text-muted-foreground">Notifications and approval workflows in Slack</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge className={slackConnected ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-0'}>
+                  {slackConnected ? (
+                    <><CircleCheck className="h-3 w-3 mr-1" />Connected</>
+                  ) : (
+                    <><CircleX className="h-3 w-3 mr-1" />Disconnected</>
+                  )}
+                </Badge>
+                <Button
+                  variant={slackConnected ? 'outline' : 'default'}
+                  size="sm"
+                  onClick={() => {
+                    setSlackConnected(!slackConnected);
+                    toast.success(slackConnected ? 'Slack disconnected' : 'Slack connected');
+                  }}
+                >
+                  {slackConnected ? 'Disconnect' : 'Connect'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Salesforce */}
+            <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/20 hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-cyan-100 dark:bg-cyan-900/30 p-2">
+                  <Cloud className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Salesforce</p>
+                  <p className="text-xs text-muted-foreground">CRM sync and contract management</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge className={salesforceConnected ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-0'}>
+                  {salesforceConnected ? (
+                    <><CircleCheck className="h-3 w-3 mr-1" />Connected</>
+                  ) : (
+                    <><CircleX className="h-3 w-3 mr-1" />Disconnected</>
+                  )}
+                </Badge>
+                <Button
+                  variant={salesforceConnected ? 'outline' : 'default'}
+                  size="sm"
+                  onClick={() => {
+                    setSalesforceConnected(!salesforceConnected);
+                    toast.success(salesforceConnected ? 'Salesforce disconnected' : 'Salesforce connected');
+                  }}
+                >
+                  {salesforceConnected ? 'Disconnect' : 'Connect'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Save Button */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex justify-end">
+        <Button size="lg" className="bg-primary hover:bg-primary/90 gap-2 shadow-md hover:shadow-lg transition-all" onClick={handleSave}>
+          <Save className="h-4 w-4" />
+          Save Configuration
+        </Button>
+      </motion.div>
+    </div>
+  );
+}
+
 // ========= System Health Dashboard =========
 function SystemHealth() {
   const { data: healthData, isLoading } = useQuery({
@@ -691,12 +1320,12 @@ function SystemHealth() {
   });
 
   const services = [
-    { name: 'API Server', status: 'operational', latency: 45, uptime: 99.98 },
-    { name: 'Database', status: healthData?.status === 'healthy' ? 'operational' : 'degraded', latency: healthData ? 12 : 45, uptime: 99.99 },
-    { name: 'Storage Service', status: 'operational', latency: 85, uptime: 99.95 },
-    { name: 'Email Service', status: 'degraded', latency: 250, uptime: 98.5 },
-    { name: 'WebSocket Server', status: 'operational', latency: 8, uptime: 99.97 },
-    { name: 'Authentication', status: 'operational', latency: 35, uptime: 99.99 },
+    { name: 'API Server', status: 'operational', latency: 45, uptime: 99.98, icon: Server },
+    { name: 'Database', status: healthData?.status === 'healthy' ? 'operational' : 'degraded', latency: healthData ? 12 : 45, uptime: 99.99, icon: Database },
+    { name: 'Storage Service', status: 'operational', latency: 85, uptime: 99.95, icon: HardDrive },
+    { name: 'Email Service', status: 'degraded', latency: 250, uptime: 98.5, icon: Mail },
+    { name: 'WebSocket Server', status: 'operational', latency: 8, uptime: 99.97, icon: Wifi },
+    { name: 'Authentication', status: 'operational', latency: 35, uptime: 99.99, icon: ShieldCheck },
   ];
 
   const uptime = healthData?.uptime || 0;
@@ -719,6 +1348,24 @@ function SystemHealth() {
     { time: 'Now', value: memoryUsage },
   ];
 
+  const getStatusColor = (status: string) => {
+    if (status === 'operational') return 'bg-emerald-500';
+    if (status === 'degraded') return 'bg-amber-500';
+    return 'bg-red-500';
+  };
+
+  const getStatusGlow = (status: string) => {
+    if (status === 'operational') return 'shadow-[0_0_6px_rgba(16,185,129,0.5)]';
+    if (status === 'degraded') return 'shadow-[0_0_6px_rgba(245,158,11,0.5)]';
+    return 'shadow-[0_0_6px_rgba(239,68,68,0.5)]';
+  };
+
+  const getLatencyColor = (latency: number) => {
+    if (latency < 50) return 'text-emerald-600 dark:text-emerald-400';
+    if (latency < 150) return 'text-amber-600 dark:text-amber-400';
+    return 'text-red-600 dark:text-red-400';
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -735,15 +1382,19 @@ function SystemHealth() {
     <div className="space-y-6">
       {/* Overview cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-emerald-500 backdrop-blur-sm bg-card/80 bg-gradient-to-br from-emerald-500/5 to-teal-500/5">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="rounded-lg bg-emerald-100 dark:bg-emerald-900/30 p-2"><Server className="h-5 w-5 text-emerald-600 dark:text-emerald-400" /></div>
+            <div className="rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 p-2 text-white shadow-md">
+              <Server className="h-5 w-5" />
+            </div>
             <div><p className="text-xs text-muted-foreground">Uptime</p><p className="text-lg font-bold">{uptimeFormatted || '99.96%'}</p></div>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-teal-500 backdrop-blur-sm bg-card/80 bg-gradient-to-br from-teal-500/5 to-cyan-500/5">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="rounded-lg bg-teal-100 dark:bg-teal-900/30 p-2"><Cpu className="h-5 w-5 text-teal-600 dark:text-teal-400" /></div>
+            <div className="rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 p-2 text-white shadow-md">
+              <Cpu className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-muted-foreground">CPU Usage</p>
               <div className="flex items-center gap-2">
@@ -753,18 +1404,22 @@ function SystemHealth() {
             </div>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-amber-500 backdrop-blur-sm bg-card/80 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="rounded-lg bg-amber-100 dark:bg-amber-900/30 p-2"><HardDrive className="h-5 w-5 text-amber-600 dark:text-amber-400" /></div>
+            <div className="rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 p-2 text-white shadow-md">
+              <HardDrive className="h-5 w-5" />
+            </div>
             <div>
               <p className="text-xs text-muted-foreground">Memory / Disk</p>
               <p className="text-lg font-bold">{memoryUsage}% / {diskUsage}%</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-md transition-shadow">
+        <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-cyan-500 backdrop-blur-sm bg-card/80 bg-gradient-to-br from-cyan-500/5 to-blue-500/5">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="rounded-lg bg-cyan-100 dark:bg-cyan-900/30 p-2"><Wifi className="h-5 w-5 text-cyan-600 dark:text-cyan-400" /></div>
+            <div className="rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 p-2 text-white shadow-md">
+              <Wifi className="h-5 w-5" />
+            </div>
             <div><p className="text-xs text-muted-foreground">Active Sessions</p><p className="text-lg font-bold">{connections}</p></div>
           </CardContent>
         </Card>
@@ -772,7 +1427,7 @@ function SystemHealth() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="border-l-4 border-l-teal-500">
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><Cpu className="h-4 w-4 text-teal-500" />CPU Usage</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -786,7 +1441,7 @@ function SystemHealth() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-4 border-l-amber-500">
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><HardDrive className="h-4 w-4 text-amber-500" />Memory Usage</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -803,7 +1458,7 @@ function SystemHealth() {
       </div>
 
       {/* Services table */}
-      <Card>
+      <Card className="border-l-4 border-l-primary/40">
         <CardHeader><CardTitle className="text-base">Service Status</CardTitle></CardHeader>
         <CardContent>
           <Table>
@@ -816,21 +1471,31 @@ function SystemHealth() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {services.map((svc) => (
-                <TableRow key={svc.name}>
-                  <TableCell><span className="text-sm font-medium">{svc.name}</span></TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${svc.status === 'operational' ? 'bg-emerald-500' : svc.status === 'degraded' ? 'bg-amber-500' : 'bg-red-500'}`} />
-                      <StatusBadge status={svc.status} />
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className={`text-sm ${svc.latency > 200 ? 'text-amber-600 dark:text-amber-400' : ''}`}>{svc.latency}ms</span>
-                  </TableCell>
-                  <TableCell><span className="text-sm">{svc.uptime}%</span></TableCell>
-                </TableRow>
-              ))}
+              {services.map((svc) => {
+                const SvcIcon = svc.icon;
+                return (
+                  <TableRow key={svc.name} className="hover:bg-accent/50">
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <div className={`h-2.5 w-2.5 rounded-full ${getStatusColor(svc.status)} ${getStatusGlow(svc.status)} animate-pulse`} />
+                        <div className="rounded-md bg-muted/50 p-1.5">
+                          <SvcIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                        </div>
+                        <span className="text-sm font-medium">{svc.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`${svc.status === 'operational' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : svc.status === 'degraded' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'} border-0`}>
+                        {svc.status === 'operational' ? '● Operational' : svc.status === 'degraded' ? '● Degraded' : '● Down'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`text-sm font-medium ${getLatencyColor(svc.latency)}`}>{svc.latency}ms</span>
+                    </TableCell>
+                    <TableCell><span className="text-sm">{svc.uptime}%</span></TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
@@ -853,17 +1518,22 @@ export function AdminPage() {
       {/* Dashboard overview at top */}
       <DashboardOverview />
 
+      {/* Quick Actions */}
+      <QuickActions />
+
       <Tabs defaultValue="users">
         <TabsList>
           <TabsTrigger value="users"><Users className="mr-2 h-4 w-4" />Users</TabsTrigger>
           <TabsTrigger value="departments"><Building2 className="mr-2 h-4 w-4" />Departments</TabsTrigger>
           <TabsTrigger value="workflows"><GitBranch className="mr-2 h-4 w-4" />Workflows</TabsTrigger>
+          <TabsTrigger value="configuration"><Settings className="mr-2 h-4 w-4" />Configuration</TabsTrigger>
           <TabsTrigger value="system"><Activity className="mr-2 h-4 w-4" />System</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="mt-4"><UserManagement /></TabsContent>
         <TabsContent value="departments" className="mt-4"><DepartmentManagement /></TabsContent>
         <TabsContent value="workflows" className="mt-4"><WorkflowManagement /></TabsContent>
+        <TabsContent value="configuration" className="mt-4"><SystemConfiguration /></TabsContent>
         <TabsContent value="system" className="mt-4"><SystemHealth /></TabsContent>
       </Tabs>
     </div>

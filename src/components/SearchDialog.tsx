@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import {
   CommandDialog,
@@ -10,6 +10,7 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
+  CommandShortcut,
 } from '@/components/ui/command';
 import {
   LayoutDashboard,
@@ -20,32 +21,40 @@ import {
   Settings,
   Users,
   Search,
-  FileSignature,
-  Plus,
   Upload,
   Building2,
   GitBranch,
   Clock,
   ArrowRight,
   Hash,
+  BarChart3,
+  Keyboard,
+  SunMoon,
+  Send,
 } from 'lucide-react';
 
 const pages = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, group: 'Navigation' },
-  { id: 'inbox', label: 'Inbox', icon: Inbox, group: 'Navigation' },
-  { id: 'documents', label: 'Documents', icon: FileText, group: 'Navigation' },
-  { id: 'templates', label: 'Templates', icon: LayoutTemplate, group: 'Navigation' },
-  { id: 'audit-logs', label: 'Audit Logs', icon: ShieldCheck, group: 'Navigation' },
-  { id: 'admin', label: 'Admin Panel', icon: Users, group: 'Navigation' },
-  { id: 'settings', label: 'Settings', icon: Settings, group: 'Navigation' },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, group: 'Navigation', shortcut: 'G D' },
+  { id: 'inbox', label: 'Inbox', icon: Inbox, group: 'Navigation', shortcut: 'G I' },
+  { id: 'documents', label: 'Documents', icon: FileText, group: 'Navigation', shortcut: 'G O' },
+  { id: 'templates', label: 'Templates', icon: LayoutTemplate, group: 'Navigation', shortcut: 'G T' },
+  { id: 'audit-logs', label: 'Audit Logs', icon: ShieldCheck, group: 'Navigation', shortcut: 'G L' },
+  { id: 'admin', label: 'Admin Panel', icon: Users, group: 'Navigation', shortcut: 'G A' },
+  { id: 'settings', label: 'Settings', icon: Settings, group: 'Navigation', shortcut: 'G S' },
+  { id: 'contacts', label: 'Contacts', icon: Building2, group: 'Navigation' },
+  { id: 'workflow-builder', label: 'Workflows', icon: GitBranch, group: 'Navigation' },
 ];
 
 const quickActions = [
-  { id: 'upload-doc', label: 'Upload Document', icon: Upload, group: 'Quick Actions', action: 'documents' },
+  { id: 'upload-doc', label: 'Upload Document', icon: Upload, group: 'Quick Actions', action: 'document-editor', shortcut: '⌘N' },
   { id: 'create-template', label: 'Create from Template', icon: LayoutTemplate, group: 'Quick Actions', action: 'templates' },
+  { id: 'send-signature', label: 'Send for Signature', icon: Send, group: 'Quick Actions', action: 'documents' },
   { id: 'go-admin', label: 'Go to Admin Panel', icon: Users, group: 'Quick Actions', action: 'admin' },
   { id: 'go-settings', label: 'Go to Settings', icon: Settings, group: 'Quick Actions', action: 'settings' },
   { id: 'view-audit', label: 'View Audit Logs', icon: ShieldCheck, group: 'Quick Actions', action: 'audit-logs' },
+  { id: 'view-reports', label: 'Navigate to Reports', icon: BarChart3, group: 'Quick Actions', action: 'dashboard' },
+  { id: 'shortcuts', label: 'Show Keyboard Shortcuts', icon: Keyboard, group: 'Quick Actions', action: '__shortcuts__', shortcut: '⌘/' },
+  { id: 'toggle-theme', label: 'Toggle Theme', icon: SunMoon, group: 'Quick Actions', action: '__toggle-theme__' },
 ];
 
 // Search categories
@@ -59,7 +68,7 @@ const searchCategories = [
 export function SearchDialog() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const { navigate } = useAppStore();
+  const { navigate, setKeyboardShortcutsOpen, setTheme, theme } = useAppStore();
 
   // Recent searches from localStorage (lazy init)
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
@@ -94,6 +103,19 @@ export function SearchDialog() {
   };
 
   const handleQuickAction = (action: string) => {
+    if (action === '__shortcuts__') {
+      setOpen(false);
+      setQuery('');
+      setTimeout(() => setKeyboardShortcutsOpen(true), 100);
+      return;
+    }
+    if (action === '__toggle-theme__') {
+      const next = theme === 'dark' ? 'light' : theme === 'light' ? 'system' : 'dark';
+      setTheme(next);
+      setOpen(false);
+      setQuery('');
+      return;
+    }
     navigate(action);
     setOpen(false);
     setQuery('');
@@ -102,7 +124,6 @@ export function SearchDialog() {
   const handleSearch = (term: string) => {
     if (term.trim()) {
       saveRecentSearch(term.trim());
-      // Navigate to documents with search
       navigate('documents');
     }
     setOpen(false);
@@ -143,6 +164,9 @@ export function SearchDialog() {
                       <ArrowRight className="mr-2 h-4 w-4 text-muted-foreground" />
                       <Icon className="mr-2 h-4 w-4" />
                       {action.label}
+                      {action.shortcut && (
+                        <CommandShortcut>{action.shortcut}</CommandShortcut>
+                      )}
                     </CommandItem>
                   );
                 })}
@@ -192,13 +216,16 @@ export function SearchDialog() {
               )}
 
               {/* Pages */}
-              <CommandGroup heading="Pages">
+              <CommandGroup heading="Navigation">
                 {pages.map((page) => {
                   const Icon = page.icon;
                   return (
                     <CommandItem key={page.id} onSelect={() => handleSelect(page.id)}>
                       <Icon className="mr-2 h-4 w-4" />
                       {page.label}
+                      {page.shortcut && (
+                        <CommandShortcut>{page.shortcut}</CommandShortcut>
+                      )}
                     </CommandItem>
                   );
                 })}
@@ -214,17 +241,27 @@ export function SearchDialog() {
                     <CommandItem key={action.id} onSelect={() => handleQuickAction(action.action)}>
                       <Icon className="mr-2 h-4 w-4" />
                       {action.label}
+                      {action.shortcut && (
+                        <CommandShortcut>{action.shortcut}</CommandShortcut>
+                      )}
                     </CommandItem>
                   );
                 })}
               </CommandGroup>
 
-              {/* Hint */}
+              {/* Hint footer */}
               <CommandSeparator />
-              <div className="px-4 py-2">
-                <p className="text-xs text-muted-foreground">
-                  Type <kbd className="px-1 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">&gt;</kbd> to see all commands
-                </p>
+              <div className="px-4 py-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    Type <kbd className="px-1 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">&gt;</kbd> for commands
+                  </span>
+                </div>
+                <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground">
+                  <span>↑↓ Navigate</span>
+                  <span>↵ Select</span>
+                  <span>Esc Close</span>
+                </div>
               </div>
             </>
           )}
