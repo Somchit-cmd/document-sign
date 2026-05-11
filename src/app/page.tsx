@@ -27,6 +27,9 @@ import { OnboardingTour } from '@/components/OnboardingTour';
 import { CalendarPage } from '@/components/CalendarPage';
 import { ApprovalChainsPage } from '@/components/ApprovalChainsPage';
 import { ArchivePage } from '@/components/ArchivePage';
+import { CertificatePage } from '@/components/CertificatePage';
+import { TeamLeaderboardPage } from '@/components/TeamLeaderboardPage';
+import { DocumentExpiryPage } from '@/components/DocumentExpiryPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -149,6 +152,12 @@ function AppContent() {
         return <CalendarPage />;
       case 'archive':
         return <ArchivePage />;
+      case 'team-leaderboard':
+        return <TeamLeaderboardPage />;
+      case 'certificates':
+        return <CertificatePage />;
+      case 'document-expiry':
+        return <DocumentExpiryPage />;
       default:
         return <DashboardPage />;
     }

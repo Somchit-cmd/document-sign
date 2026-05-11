@@ -126,10 +126,10 @@ export function StatCard({ title, value, trend, icon, className, variant = 'defa
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
     >
       <Card className={cn(
-        'card-hover-lift gradient-border-hover border rounded-xl overflow-hidden',
+        'card-hover-lift hover-card-glow card-tilt gradient-border-hover border rounded-xl overflow-hidden',
         styles.border,
         'bg-gradient-to-br',
         styles.gradient,
@@ -176,7 +176,7 @@ export function StatCard({ title, value, trend, icon, className, variant = 'defa
               )}
             </div>
             <div className="flex flex-col items-end gap-2">
-              <div className={cn('rounded-lg p-2.5', styles.iconBg)}>
+              <div className={cn('rounded-xl p-2.5 shadow-lg shadow-primary/10', styles.iconBg)}>
                 {icon}
               </div>
               <MiniSparkline data={defaultSparkline} color={styles.sparkColor} />

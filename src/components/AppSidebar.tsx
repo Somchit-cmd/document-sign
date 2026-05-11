@@ -24,6 +24,9 @@ import {
   GitMerge,
   Calendar,
   Archive,
+  Timer,
+  Trophy,
+  Award,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,7 +49,9 @@ const navGroups = [
       { id: 'documents', label: 'Documents', icon: FileText, badge: 'docs' },
       { id: 'calendar', label: 'Calendar', icon: Calendar },
       { id: 'archive', label: 'Archive', icon: Archive },
+      { id: 'document-expiry', label: 'Expiry Tracker', icon: Timer },
       { id: 'contacts', label: 'Contacts', icon: Users },
+      { id: 'team-leaderboard', label: 'Leaderboard', icon: Trophy },
       { id: 'notifications', label: 'Notifications', icon: Bell },
     ],
   },
@@ -56,6 +61,7 @@ const navGroups = [
       { id: 'templates', label: 'Templates', icon: LayoutTemplate },
       { id: 'workflow-builder', label: 'Workflows', icon: GitBranch },
       { id: 'approval-chains', label: 'Approvals', icon: GitMerge },
+      { id: 'certificates', label: 'Certificates', icon: Award },
       { id: 'audit-logs', label: 'Audit Logs', icon: ShieldCheck },
       { id: 'reports', label: 'Reports', icon: BarChart3 },
     ],

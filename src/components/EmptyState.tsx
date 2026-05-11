@@ -29,24 +29,24 @@ export function EmptyState({ icon, title, description, action, variant = 'defaul
   const displayIcon = icon || config.icon;
 
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center content-reveal">
       {/* Animated illustration container */}
       <motion.div
         className="relative mb-6"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       >
-        {/* Background glow */}
-        <div className="absolute inset-0 bg-primary/5 rounded-full blur-xl scale-150" />
+        {/* Background gradient glow */}
+        <div className="absolute inset-0 rounded-full blur-2xl scale-150 bg-gradient-to-br from-emerald-400/10 via-teal-400/5 to-cyan-400/10" />
 
         {/* Main icon circle with gentle bobbing */}
         <motion.div
-          className="relative rounded-full bg-muted/50 border border-border p-6"
+          className="relative rounded-full bg-gradient-to-br from-muted/60 to-muted/30 border border-border/50 p-6"
           animate={{ y: [0, -6, 0] }}
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <div className="text-muted-foreground/40">
+          <div className="text-muted-foreground/50">
             {displayIcon}
           </div>
         </motion.div>
@@ -70,19 +70,19 @@ export function EmptyState({ icon, title, description, action, variant = 'defaul
       </motion.div>
 
       <motion.h3
-        className="text-lg font-semibold mb-2"
+        className="text-lg font-semibold mb-2 tracking-tight"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.3 }}
+        transition={{ delay: 0.2, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
       >
         {title}
       </motion.h3>
 
       <motion.p
-        className="text-muted-foreground text-sm max-w-md mb-6"
+        className="text-muted-foreground text-sm max-w-md mb-6 leading-relaxed"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.3 }}
+        transition={{ delay: 0.3, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
       >
         {description}
       </motion.p>
@@ -91,9 +91,9 @@ export function EmptyState({ icon, title, description, action, variant = 'defaul
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.3 }}
+          transition={{ delay: 0.4, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         >
-          <Button onClick={action.onClick} className="bg-primary hover:bg-primary/90 btn-click-scale">
+          <Button onClick={action.onClick} className="bg-primary hover:bg-primary/90 btn-click-scale btn-gradient-sweep">
             {action.label}
           </Button>
         </motion.div>

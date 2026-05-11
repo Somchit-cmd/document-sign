@@ -53,6 +53,8 @@ import {
   Pie,
   Cell,
   Legend,
+  AreaChart,
+  Area,
 } from 'recharts';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow, differenceInHours, differenceInDays, format } from 'date-fns';
@@ -182,6 +184,20 @@ const expiringSoonDocs = [
     signer: 'Emily Watson',
   },
 ];
+
+// Expiring documents for dashboard widget
+const expiringDocs = [
+  { id: 'exp-1', title: 'Enterprise License Agreement', expiresIn: '3 days', expiryDate: 'Jan 18, 2026', owner: 'David Kim', urgency: 'critical' as const, progress: 95 },
+  { id: 'exp-2', title: 'Office Lease Agreement', expiresIn: '12 days', expiryDate: 'Jan 27, 2026', owner: 'Sarah Chen', urgency: 'urgent' as const, progress: 82 },
+  { id: 'exp-3', title: 'Software License - Adobe', expiresIn: '21 days', expiryDate: 'Feb 5, 2026', owner: 'Mike Johnson', urgency: 'soon' as const, progress: 68 },
+  { id: 'exp-4', title: 'Insurance Policy - General', expiresIn: '28 days', expiryDate: 'Feb 12, 2026', owner: 'Lisa Park', urgency: 'soon' as const, progress: 55 },
+];
+
+// Signing velocity data (past 14 days)
+const signingVelocityData = Array.from({ length: 14 }, (_, i) => ({
+  day: `Day ${i + 1}`,
+  signed: Math.floor(Math.random() * 8) + 3 + Math.floor(Math.sin(i / 3) * 2),
+}));
 
 // Weekly Activity Heatmap mock data (7 days x 24 hours)
 const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -610,6 +626,7 @@ export function DashboardPage() {
     { icon: FileSignature, label: 'signatures today', value: 12, color: 'text-teal-600 dark:text-teal-400' },
     { icon: Timer, label: 'avg turnaround', value: '2.3 days', color: 'text-cyan-600 dark:text-cyan-400' },
     { icon: Bell, label: 'unread notifications', value: unreadCount, color: 'text-amber-600 dark:text-amber-400' },
+    { icon: AlertTriangle, label: 'expiring soon', value: 4, color: 'text-amber-600 dark:text-amber-400' },
   ], [unreadCount]);
 
 
@@ -638,11 +655,11 @@ export function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => navigate('documents')} variant="outline" size="sm" className="btn-click-scale">
+          <Button onClick={() => navigate('documents')} variant="outline" size="sm" className="btn-click-scale btn-gradient-sweep">
             <Upload className="mr-2 h-4 w-4" />
             Upload
           </Button>
-          <Button onClick={() => navigate('templates')} size="sm" className="bg-primary hover:bg-primary/90 btn-click-scale">
+          <Button onClick={() => navigate('templates')} size="sm" className="bg-primary hover:bg-primary/90 btn-click-scale btn-gradient-sweep">
             <LayoutTemplate className="mr-2 h-4 w-4" />
             From Template
           </Button>
@@ -722,7 +739,7 @@ export function DashboardPage() {
       </motion.div>
 
       {/* Stat Cards with View Details */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-fade-up">
         {statsLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
@@ -782,7 +799,7 @@ export function DashboardPage() {
         transition={{ delay: 0.2, duration: 0.4 }}
       >
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Links</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 stagger-fade-up">
           {quickActions.map((action, i) => {
             const Icon = action.icon;
             return (
@@ -930,13 +947,175 @@ export function DashboardPage() {
         </div>
       </motion.div>
 
+      {/* Document Expiry Alert Widget */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.4 }}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            Expiring Documents
+          </h2>
+          <Button variant="ghost" size="sm" className="text-xs btn-gradient-sweep" onClick={() => navigate('document-expiry')}>
+            View all <ArrowRight className="ml-1 h-3 w-3" />
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 stagger-fade-up">
+          {expiringDocs.map((doc, i) => {
+            const urgencyStyles = {
+              critical: {
+                border: 'border-l-red-500',
+                bg: 'bg-red-50 dark:bg-red-950/20',
+                text: 'text-red-600 dark:text-red-400',
+                progressBg: 'bg-red-500',
+                icon: <AlertTriangle className="h-3.5 w-3.5" />,
+              },
+              urgent: {
+                border: 'border-l-amber-500',
+                bg: 'bg-amber-50 dark:bg-amber-950/20',
+                text: 'text-amber-600 dark:text-amber-400',
+                progressBg: 'bg-amber-500',
+                icon: <Clock className="h-3.5 w-3.5" />,
+              },
+              soon: {
+                border: 'border-l-emerald-500',
+                bg: 'bg-emerald-50 dark:bg-emerald-950/20',
+                text: 'text-emerald-600 dark:text-emerald-400',
+                progressBg: 'bg-emerald-500',
+                icon: <Clock className="h-3.5 w-3.5" />,
+              },
+            };
+            const style = urgencyStyles[doc.urgency];
+
+            return (
+              <motion.div
+                key={doc.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 + i * 0.08, duration: 0.35 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                className="hover-card-glow"
+              >
+                <div className={`rounded-xl border-l-4 ${style.border} border border-border bg-card p-4 card-shadow-premium transition-all`}>
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="text-sm font-medium truncate pr-2">{doc.title}</p>
+                    <span className={`shrink-0 ${style.text}`}>
+                      {style.icon}
+                    </span>
+                  </div>
+                  <p className={`text-xs font-semibold mb-1 ${style.text}`}>
+                    Expires in {doc.expiresIn}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mb-3">
+                    {doc.owner} · {doc.expiryDate}
+                  </p>
+                  {/* Progress bar showing time remaining */}
+                  <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                    <motion.div
+                      className={`h-full rounded-full ${style.progressBg}`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${doc.progress}%` }}
+                      transition={{ delay: 0.3 + i * 0.1, duration: 0.8, ease: 'easeOut' }}
+                    />
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-1 text-right">
+                    {doc.progress}% lifespan used
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </motion.div>
+
+      {/* Signing Velocity Chart */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.52, duration: 0.4 }}
+      >
+        <Card className="border-border overflow-hidden hover-card-glow">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" />
+                Signing Velocity
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  Avg {Math.round(signingVelocityData.reduce((a, b) => a + b.signed, 0) / signingVelocityData.length)} docs/day
+                </span>
+                <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                  <TrendingUp className="h-3 w-3" />
+                  +12%
+                </span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={160}>
+              <AreaChart data={signingVelocityData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="velocityGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop offset="50%" stopColor="#14b8a6" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.02} />
+                  </linearGradient>
+                  <linearGradient id="velocityStroke" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="50%" stopColor="#14b8a6" />
+                    <stop offset="100%" stopColor="#06b6d4" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+                <XAxis
+                  dataKey="day"
+                  className="text-xs"
+                  tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  className="text-xs"
+                  tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                  formatter={(value: number) => [`${value} docs`, 'Signed']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="signed"
+                  stroke="url(#velocityStroke)"
+                  strokeWidth={2.5}
+                  fill="url(#velocityGradient)"
+                  dot={false}
+                  activeDot={{ r: 4, strokeWidth: 2, fill: '#10b981', stroke: 'var(--card)' }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      <div className="divider-gradient my-2" />
+
       {/* Weekly Activity Chart */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.42, duration: 0.4 }}
       >
-        <Card className="border-border overflow-hidden">
+        <Card className="border-border overflow-hidden hover-card-glow">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-primary" />
@@ -995,7 +1174,7 @@ export function DashboardPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.45, duration: 0.4 }}
         >
-          <Card className="border-border overflow-hidden h-full">
+          <Card className="border-border overflow-hidden h-full hover-card-glow">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" />
@@ -1057,7 +1236,7 @@ export function DashboardPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5, duration: 0.4 }}
         >
-          <Card className="border-border overflow-hidden h-full">
+          <Card className="border-border overflow-hidden h-full hover-card-glow">
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary" />
@@ -1239,7 +1418,7 @@ export function DashboardPage() {
           <Activity className="h-4 w-4 text-primary" />
           Signing Analytics
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-fade-up">
           {/* Average Signing Time Card */}
           <motion.div variants={itemVariants}>
             <Card className="border-border overflow-hidden h-full bg-gradient-to-br from-teal-50/80 to-card dark:from-teal-950/20 dark:to-card border-teal-200/50 dark:border-teal-900/30">
