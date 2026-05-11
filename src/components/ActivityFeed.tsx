@@ -5,6 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import type { ActivityItem } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { FileText, FileSignature, ShieldCheck, LogIn, LogOut, Eye } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface ActivityFeedProps {
   activities: ActivityItem[];
@@ -28,8 +29,14 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
   return (
     <ScrollArea className="h-96">
       <div className="space-y-4">
-        {activities.map((activity) => (
-          <div key={activity.id} className="flex gap-3">
+        {activities.map((activity, i) => (
+          <motion.div
+            key={activity.id}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.03, duration: 0.2 }}
+            className="flex gap-3 group"
+          >
             <div className="mt-0.5 shrink-0">
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="text-xs bg-primary/10 text-primary">
@@ -48,12 +55,12 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
                     {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
                   </p>
                 </div>
-                <div className="shrink-0 mt-1">
+                <div className="shrink-0 mt-1 opacity-60 group-hover:opacity-100 transition-opacity">
                   {actionIcons[activity.action] || <FileText className="h-4 w-4 text-muted-foreground" />}
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </ScrollArea>

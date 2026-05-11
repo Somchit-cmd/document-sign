@@ -102,7 +102,7 @@
   --chart-3: oklch(0.70 0.10 145);
   --chart-4: oklch(0.80 0.14 85);
   --chart-5: oklch(0.70 0.16 30);
-  --sidebar: oklch(0.17 0.02 155);
+  --sidebar: oklch(0.155 0.02 155);
   --sidebar-foreground: oklch(0.96 0.005 155);
   --sidebar-primary: oklch(0.60 0.16 160);
   --sidebar-primary-foreground: oklch(0.14 0.015 155);
@@ -132,28 +132,31 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
+  background: var(--border);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
+  background: var(--muted-foreground);
 }
 
 /* Firefox scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--border)) transparent;
+  scrollbar-color: var(--border) transparent;
 }
 
-/* Custom animations */
+/* =============================================
+   Custom Animations
+   ============================================= */
+
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent, hsl(var(--muted) / 0.5), transparent);
+  background: linear-gradient(90deg, transparent, var(--muted) / 0.5, transparent);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -183,4 +186,213 @@
 
 .animate-pulse-emerald {
   animation: pulse-emerald 2s ease-in-out infinite;
+}
+
+/* Animated gradient background for login */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  25% { background-position: 50% 0%; }
+  50% { background-position: 100% 50%; }
+  75% { background-position: 50% 100%; }
+}
+
+.animate-gradient-shift {
+  background-size: 300% 300%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+/* Floating icons animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-12px) rotate(2deg); }
+  66% { transform: translateY(6px) rotate(-1deg); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 8s ease-in-out 2s infinite;
+}
+
+.animate-float-slow {
+  animation: float 10s ease-in-out 1s infinite;
+}
+
+/* Pulse glow for buttons */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--primary) / 0.4; }
+  50% { box-shadow: 0 0 20px 4px var(--primary) / 0.15; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Bounce notification bell */
+@keyframes bell-bounce {
+  0%, 100% { transform: rotate(0deg); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  30% { transform: rotate(6deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(2deg); }
+  60% { transform: rotate(0deg); }
+}
+
+.animate-bell-bounce {
+  animation: bell-bounce 1.5s ease-in-out;
+}
+
+/* Typing cursor blink */
+@keyframes cursor-blink {
+  0%, 50% { border-color: transparent; }
+  51%, 100% { border-color: var(--primary); }
+}
+
+.animate-cursor-blink {
+  border-right: 2px solid var(--primary);
+  animation: cursor-blink 1s step-end infinite;
+}
+
+/* Skeleton gradient pulse */
+@keyframes skeleton-pulse {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-gradient {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    var(--muted) / 0.6 50%,
+    var(--muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Card hover lift effect */
+.card-hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgb(0 0 0 / 0.1), 0 4px 10px -6px rgb(0 0 0 / 0.05);
+}
+
+/* Dark mode card shadow */
+.dark .card-hover-lift:hover {
+  box-shadow: 0 8px 25px -5px rgb(0 0 0 / 0.3), 0 4px 10px -6px rgb(0 0 0 / 0.2);
+}
+
+/* Button click scale */
+.btn-click-scale {
+  transition: transform 0.1s ease;
+}
+.btn-click-scale:active {
+  transform: scale(0.98);
+}
+
+/* Zebra striping for tables */
+.table-zebra tr:nth-child(even) {
+  background-color: var(--muted) / 0.3;
+}
+.dark .table-zebra tr:nth-child(even) {
+  background-color: rgb(255 255 255 / 0.02);
+}
+
+/* Active sidebar indicator */
+.sidebar-active-indicator {
+  position: relative;
+}
+.sidebar-active-indicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: var(--primary);
+  border-radius: 0 4px 4px 0;
+}
+
+/* Sparkline chart */
+@keyframes draw-sparkline {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* Geometric pattern for login background */
+@keyframes geometric-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-geometric-rotate {
+  animation: geometric-rotate 60s linear infinite;
+}
+
+/* Subtle particle drift */
+@keyframes particle-drift {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+  25% { transform: translate(10px, -20px) scale(1.1); opacity: 0.5; }
+  50% { transform: translate(-5px, -40px) scale(0.9); opacity: 0.3; }
+  75% { transform: translate(15px, -60px) scale(1.05); opacity: 0.4; }
+  100% { transform: translate(0, -80px) scale(1); opacity: 0; }
+}
+
+.animate-particle-drift {
+  animation: particle-drift 8s ease-in-out infinite;
+}
+
+/* =============================================
+   Dark Mode Polish
+   ============================================= */
+
+/* Subtle dark mode card borders */
+.dark .rounded-xl {
+  border-color: rgb(255 255 255 / 5%);
+}
+
+/* Dark mode active sidebar glow */
+.dark .sidebar-active-indicator::before {
+  box-shadow: 0 0 8px 2px var(--primary) / 0.3;
+}
+
+/* Dark mode hover states - more subtle */
+.dark .hover\:bg-accent\/50:hover {
+  background-color: rgb(255 255 255 / 3%);
+}
+
+/* Dark mode focus ring glow */
+.dark *:focus-visible {
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--primary) / 0.4;
+}
+
+/* Dialog backdrop blur in dark mode */
+.dark [data-radix-popper-content-wrapper] > div {
+  background-color: oklch(0.19 0.02 155);
+  border-color: rgb(255 255 255 / 8%);
+}
+
+/* Ensure chart tooltip works in dark mode */
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: oklch(0.22 0.02 155) !important;
+  border-color: rgb(255 255 255 / 10%) !important;
+}
+
+/* Dark mode dropdown menu polish */
+.dark [data-radix-dropdown-menu-content] {
+  background-color: oklch(0.22 0.02 155);
+  border-color: rgb(255 255 255 / 8%);
+  box-shadow: 0 10px 40px -10px rgb(0 0 0 / 0.5);
+}
+
+/* Stagger animation utility */
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

@@ -1,22 +1,72 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { FileSignature, Mail, Lock, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { FileSignature, Mail, Lock, Loader2, Shield, Award, LockKeyhole, Globe } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const demoAccounts = [
-  { email: 'admin@company.com', label: 'Super Admin', desc: 'Full system access' },
-  { email: 'hr@company.com', label: 'HR Director', desc: 'HR & approvals' },
-  { email: 'finance@company.com', label: 'Finance', desc: 'Finance workflows' },
-  { email: 'legal@company.com', label: 'Legal', desc: 'Legal & compliance' },
-  { email: 'mgr-eng@company.com', label: 'Eng Manager', desc: 'Department manager' },
-  { email: 'emp1@company.com', label: 'Employee', desc: 'Sign & view docs' },
+  { email: 'admin@company.com', label: 'Super Admin', desc: 'Full system access', color: 'from-emerald-500 to-teal-600' },
+  { email: 'hr@company.com', label: 'HR Director', desc: 'HR & approvals', color: 'from-teal-500 to-cyan-600' },
+  { email: 'finance@company.com', label: 'Finance', desc: 'Finance workflows', color: 'from-cyan-500 to-emerald-600' },
+  { email: 'legal@company.com', label: 'Legal', desc: 'Legal & compliance', color: 'from-emerald-600 to-teal-500' },
+  { email: 'mgr-eng@company.com', label: 'Eng Manager', desc: 'Department manager', color: 'from-teal-600 to-emerald-500' },
+  { email: 'emp1@company.com', label: 'Employee', desc: 'Sign & view docs', color: 'from-emerald-500 to-cyan-600' },
 ];
+
+// Floating background icons
+const floatingIcons = [
+  { icon: '📄', x: '15%', y: '20%', delay: 0, duration: 6 },
+  { icon: '✍️', x: '75%', y: '35%', delay: 1, duration: 8 },
+  { icon: '📋', x: '25%', y: '65%', delay: 2, duration: 7 },
+  { icon: '🔐', x: '80%', y: '75%', delay: 0.5, duration: 9 },
+  { icon: '📝', x: '50%', y: '15%', delay: 3, duration: 6.5 },
+  { icon: '🤝', x: '60%', y: '80%', delay: 1.5, duration: 7.5 },
+];
+
+// Particle dots with deterministic positions (to avoid hydration mismatch)
+const particlePositions = [
+  { left: '15%', top: '25%' }, { left: '75%', top: '45%' },
+  { left: '35%', top: '65%' }, { left: '85%', top: '20%' },
+  { left: '50%', top: '80%' }, { left: '25%', top: '40%' },
+  { left: '65%', top: '15%' }, { left: '45%', top: '55%' },
+  { left: '80%', top: '70%' }, { left: '20%', top: '85%' },
+  { left: '55%', top: '30%' }, { left: '70%', top: '60%' },
+];
+const particleDelays = [0, 0.8, 1.6, 2.4, 3.2, 0.4, 1.2, 2.0, 2.8, 3.6, 1.0, 1.8];
+const particleDurations = [6, 8, 7, 9, 6.5, 7.5, 8.5, 6.8, 7.2, 9.5, 6.3, 8.2];
+
+// Typing effect component
+function TypingEffect({ text, speed = 50 }: { text: string; speed?: number }) {
+  const [displayed, setDisplayed] = useState('');
+  const [showCursor, setShowCursor] = useState(true);
+
+  useEffect(() => {
+    let index = 0;
+    setDisplayed('');
+    const interval = setInterval(() => {
+      if (index < text.length) {
+        setDisplayed(text.slice(0, index + 1));
+        index++;
+      } else {
+        clearInterval(interval);
+        setTimeout(() => setShowCursor(false), 2000);
+      }
+    }, speed);
+    return () => clearInterval(interval);
+  }, [text, speed]);
+
+  return (
+    <span>
+      {displayed}
+      {showCursor && <span className="animate-cursor-blink ml-0.5" />}
+    </span>
+  );
+}
 
 export function LoginPage() {
   const { login, isLoading } = useAppStore();
@@ -34,7 +84,7 @@ export function LoginPage() {
     }
   };
 
-  const handleDemoLogin = async (demoEmail: string) => {
+  const handleDemoLogin = useCallback(async (demoEmail: string) => {
     setEmail(demoEmail);
     setError('');
     try {
@@ -42,13 +92,68 @@ export function LoginPage() {
     } catch {
       setError('Demo login failed. Please try again.');
     }
-  };
+  }, [login]);
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white">
+    <div className="min-h-screen flex" suppressHydrationWarning>
+      {/* Left side - Branding with animated gradient */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white animate-gradient-shift">
+        {/* Animated geometric pattern overlay */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 border border-white/20 rounded-full animate-geometric-rotate" />
+          <div className="absolute top-1/3 left-1/3 w-64 h-64 border border-white/10 rounded-full animate-geometric-rotate" style={{ animationDirection: 'reverse', animationDuration: '45s' }} />
+          <div className="absolute bottom-1/4 right-1/4 w-48 h-48 border border-emerald-300/20 rounded-full animate-geometric-rotate" style={{ animationDuration: '30s' }} />
+        </div>
+
+        {/* Grid pattern overlay */}
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-40" />
+
+        {/* Floating document/signature icons */}
+        {floatingIcons.map((item, i) => (
+          <motion.div
+            key={i}
+            className="absolute text-3xl opacity-20 select-none"
+            style={{ left: item.x, top: item.y }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{
+              opacity: 0.2,
+              y: [0, -15, 5, -10, 0],
+            }}
+            transition={{
+              delay: item.delay,
+              duration: item.duration,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          >
+            {item.icon}
+          </motion.div>
+        ))}
+
+        {/* Particle dots */}
+        {particlePositions.map((pos, i) => (
+          <motion.div
+            key={`particle-${i}`}
+            className="absolute w-1 h-1 rounded-full bg-emerald-400/30"
+            style={{
+              left: pos.left,
+              top: pos.top,
+            }}
+            animate={{
+              y: [0, -30, -60, -80],
+              opacity: [0.3, 0.5, 0.3, 0],
+              scale: [1, 1.2, 0.8, 0],
+            }}
+            transition={{
+              duration: particleDurations[i],
+              repeat: Infinity,
+              delay: particleDelays[i],
+              ease: 'easeOut',
+            }}
+          />
+        ))}
+
+        {/* Main content */}
         <motion.div
           initial={{ opacity: 0, x: -40 }}
           animate={{ opacity: 1, x: 0 }}
@@ -56,7 +161,7 @@ export function LoginPage() {
           className="relative z-10 flex flex-col justify-center px-16"
         >
           <div className="flex items-center gap-3 mb-8">
-            <div className="rounded-xl bg-white/10 backdrop-blur-sm p-3">
+            <div className="rounded-xl bg-white/10 backdrop-blur-sm p-3 border border-white/10">
               <FileSignature className="h-10 w-10 text-emerald-300" />
             </div>
             <div>
@@ -64,13 +169,16 @@ export function LoginPage() {
               <span className="block text-sm text-emerald-300 font-medium">Enterprise</span>
             </div>
           </div>
+
           <h1 className="text-4xl font-bold leading-tight mb-4">
             Secure Document<br />
-            Signing Platform
+            <TypingEffect text="Signing Platform" speed={80} />
           </h1>
+
           <p className="text-emerald-200 text-lg max-w-md leading-relaxed mb-8">
             Enterprise-grade electronic signatures with approval workflows, audit trails, and real-time collaboration for internal teams.
           </p>
+
           <div className="space-y-4">
             {[
               'Legally binding e-signatures with full audit trail',
@@ -84,16 +192,50 @@ export function LoginPage() {
                 key={feature}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + i * 0.1, duration: 0.5 }}
+                transition={{ delay: 0.5 + i * 0.12, duration: 0.5, ease: 'easeOut' }}
                 className="flex items-center gap-3"
               >
                 <div className="rounded-full bg-emerald-400/20 p-1">
-                  <div className="h-2 w-2 rounded-full bg-emerald-400" />
+                  <motion.div
+                    className="h-2 w-2 rounded-full bg-emerald-400"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.7 + i * 0.12, duration: 0.3, type: 'spring' }}
+                  />
                 </div>
                 <span className="text-emerald-100">{feature}</span>
               </motion.div>
             ))}
           </div>
+
+          {/* Trust bar */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.5, duration: 0.6 }}
+            className="mt-12 pt-6 border-t border-white/10"
+          >
+            <p className="text-emerald-300/70 text-xs font-medium mb-3 uppercase tracking-wider">Trusted by 10,000+ enterprises</p>
+            <div className="flex items-center gap-6">
+              {/* Security badges */}
+              <div className="flex items-center gap-2 text-emerald-200/60 text-xs">
+                <Shield className="h-4 w-4" />
+                <span>SOC 2</span>
+              </div>
+              <div className="flex items-center gap-2 text-emerald-200/60 text-xs">
+                <Award className="h-4 w-4" />
+                <span>ISO 27001</span>
+              </div>
+              <div className="flex items-center gap-2 text-emerald-200/60 text-xs">
+                <LockKeyhole className="h-4 w-4" />
+                <span>GDPR</span>
+              </div>
+              <div className="flex items-center gap-2 text-emerald-200/60 text-xs">
+                <Globe className="h-4 w-4" />
+                <span>HIPAA</span>
+              </div>
+            </div>
+          </motion.div>
         </motion.div>
       </div>
 
@@ -122,9 +264,13 @@ export function LoginPage() {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            >
               {error}
-            </div>
+            </motion.div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -161,7 +307,7 @@ export function LoginPage() {
                 />
               </div>
             </div>
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 btn-click-scale" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -180,38 +326,56 @@ export function LoginPage() {
             </span>
           </div>
 
-          {/* SSO Buttons */}
+          {/* SSO Buttons with hover glow */}
           <div className="grid grid-cols-3 gap-3 mb-6">
-            <Button variant="outline" className="w-full" onClick={() => handleDemoLogin('admin@company.com')}>
+            <Button
+              variant="outline"
+              className="w-full btn-click-scale group hover:shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:border-primary/30 transition-all duration-300"
+              onClick={() => handleDemoLogin('admin@company.com')}
+            >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 23 23"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
               <span className="text-xs">Microsoft</span>
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => handleDemoLogin('admin@company.com')}>
+            <Button
+              variant="outline"
+              className="w-full btn-click-scale group hover:shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:border-primary/30 transition-all duration-300"
+              onClick={() => handleDemoLogin('admin@company.com')}
+            >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
               <span className="text-xs">Google</span>
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => handleDemoLogin('admin@company.com')}>
+            <Button
+              variant="outline"
+              className="w-full btn-click-scale group hover:shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:border-primary/30 transition-all duration-300"
+              onClick={() => handleDemoLogin('admin@company.com')}
+            >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121L8.32 13.617l-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.94z"/></svg>
               <span className="text-xs">LDAP</span>
             </Button>
           </div>
 
-          {/* Demo Accounts */}
+          {/* Demo Accounts with hover scale */}
           <div className="rounded-lg border border-border bg-muted/30 p-4">
             <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
               Quick Demo Access
             </p>
             <div className="grid grid-cols-2 gap-2">
-              {demoAccounts.map((account) => (
-                <button
+              {demoAccounts.map((account, i) => (
+                <motion.button
                   key={account.email}
                   onClick={() => handleDemoLogin(account.email)}
                   disabled={isLoading}
-                  className="flex flex-col items-start rounded-md border border-border bg-background px-3 py-2 text-left hover:bg-accent transition-colors disabled:opacity-50"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + i * 0.05, duration: 0.3 }}
+                  whileHover={{ scale: 1.03, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex flex-col items-start rounded-md border border-border bg-background px-3 py-2.5 text-left hover:shadow-md hover:border-primary/20 transition-colors disabled:opacity-50 relative overflow-hidden group"
                 >
-                  <span className="text-sm font-medium">{account.label}</span>
-                  <span className="text-[11px] text-muted-foreground">{account.desc}</span>
-                </button>
+                  <div className={`absolute inset-0 bg-gradient-to-r ${account.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+                  <span className="text-sm font-medium relative z-10">{account.label}</span>
+                  <span className="text-[11px] text-muted-foreground relative z-10">{account.desc}</span>
+                </motion.button>
               ))}
             </div>
           </div>

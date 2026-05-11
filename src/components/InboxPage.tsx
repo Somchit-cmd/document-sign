@@ -44,17 +44,18 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
+import { EmptyState } from './EmptyState';
 
 // Approval timeline for a document
 function ApprovalTimeline({ doc }: { doc: Document }) {
   const steps = [
-    ...(doc.signatures || []).map((sig, i) => ({
+    ...(doc.signatures || []).map((sig) => ({
       id: sig.id,
       label: `${sig.signer?.name || 'Signer'} - ${sig.type === 'drawn' ? 'Signature' : 'Initial'}`,
       status: sig.signedAt ? 'completed' : 'pending' as const,
       date: sig.signedAt,
     })),
-    ...(doc.recipients || []).map((rec, i) => ({
+    ...(doc.recipients || []).map((rec) => ({
       id: rec.id,
       label: `${rec.user.name} - ${rec.role === 'signer' ? 'Sign' : rec.role === 'cc' ? 'CC' : 'Review'}`,
       status: rec.status === 'signed' ? 'completed' : rec.status === 'declined' ? 'rejected' : 'pending' as const,
@@ -68,7 +69,7 @@ function ApprovalTimeline({ doc }: { doc: Document }) {
     <div className="mt-3 pt-3 border-t border-border">
       <p className="text-xs font-medium text-muted-foreground mb-2">Approval Chain</p>
       <div className="space-y-1">
-        {steps.map((step, i) => (
+        {steps.map((step) => (
           <div key={step.id} className="flex items-center gap-2">
             <div className="shrink-0">
               {step.status === 'completed' ? (
@@ -124,7 +125,7 @@ function ApprovalCard({
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className={`hover:shadow-md transition-all group ${isUrgent ? 'border-amber-200 dark:border-amber-900/50' : ''} ${selected ? 'ring-2 ring-primary' : ''}`}>
+      <Card className={`card-hover-lift group ${isUrgent ? 'border-amber-200 dark:border-amber-900/50' : ''} ${selected ? 'ring-2 ring-primary' : ''}`}>
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             {/* Selection checkbox */}
@@ -183,7 +184,7 @@ function ApprovalCard({
           <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border">
             <Button
               size="sm"
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white btn-click-scale"
               onClick={() => onAction?.('approve', document.id)}
             >
               <CheckCircle2 className="mr-1 h-3 w-3" />
@@ -192,7 +193,7 @@ function ApprovalCard({
             <Button
               size="sm"
               variant="outline"
-              className="flex-1 text-destructive hover:text-destructive"
+              className="flex-1 text-destructive hover:text-destructive btn-click-scale"
               onClick={() => onAction?.('reject', document.id)}
             >
               <XCircle className="mr-1 h-3 w-3" />
@@ -201,6 +202,7 @@ function ApprovalCard({
             <Button
               size="sm"
               variant="ghost"
+              className="btn-click-scale"
               onClick={() => onAction?.('view', document.id)}
             >
               <Eye className="mr-1 h-3 w-3" />
@@ -229,7 +231,7 @@ function RejectDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md backdrop-blur-sm">
         <DialogHeader>
           <DialogTitle>Reject Document</DialogTitle>
         </DialogHeader>
@@ -247,11 +249,12 @@ function RejectDialog({
             />
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button variant="outline" onClick={onClose} className="btn-click-scale">Cancel</Button>
             <Button
               variant="destructive"
               onClick={() => { onConfirm(reason); setReason(''); onClose(); }}
               disabled={!reason.trim()}
+              className="btn-click-scale"
             >
               Reject Document
             </Button>
@@ -293,7 +296,7 @@ export function InboxPage() {
     d.recipients.some(r => r.role === 'viewer' && r.status === 'pending') ||
     d.status === 'sent'
   );
-  const completedDocs: Document[] = []; // Would need a separate query
+  const completedDocs: Document[] = [];
   const urgentItems = pendingDocuments.filter((d) => d.priority === 'urgent' || d.priority === 'high');
 
   // Approve mutation
@@ -405,7 +408,7 @@ export function InboxPage() {
             <Badge variant="secondary">{selectedDocs.size} selected</Badge>
             <Button
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white btn-click-scale"
               onClick={handleBatchApprove}
             >
               <CheckCheck className="mr-1.5 h-3.5 w-3.5" />
@@ -415,6 +418,7 @@ export function InboxPage() {
               size="sm"
               variant="ghost"
               onClick={() => setSelectedDocs(new Set())}
+              className="btn-click-scale"
             >
               Clear
             </Button>
@@ -424,18 +428,18 @@ export function InboxPage() {
 
       <Tabs defaultValue="all">
         <TabsList>
-          <TabsTrigger value="all">
+          <TabsTrigger value="all" className="btn-click-scale">
             All ({pendingDocuments.length})
           </TabsTrigger>
-          <TabsTrigger value="signature">
+          <TabsTrigger value="signature" className="btn-click-scale">
             <FileText className="mr-1.5 h-3.5 w-3.5" />
             Needs Signature ({needsSignature.length})
           </TabsTrigger>
-          <TabsTrigger value="approval">
+          <TabsTrigger value="approval" className="btn-click-scale">
             <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
             Needs Approval ({needsApproval.length})
           </TabsTrigger>
-          <TabsTrigger value="completed">
+          <TabsTrigger value="completed" className="btn-click-scale">
             Completed
           </TabsTrigger>
         </TabsList>
@@ -482,17 +486,11 @@ export function InboxPage() {
               ))}
             </AnimatePresence>
             {pendingDocuments.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-16"
-              >
-                <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
-                  <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-                </div>
-                <h3 className="text-lg font-medium">All caught up!</h3>
-                <p className="text-muted-foreground text-sm mt-1">No documents require your attention right now.</p>
-              </motion.div>
+              <EmptyState
+                variant="inbox"
+                title="You're all caught up!"
+                description="No documents require your attention right now. Great job staying on top of things!"
+              />
             )}
           </div>
         </TabsContent>
@@ -511,13 +509,11 @@ export function InboxPage() {
               ))}
             </AnimatePresence>
             {needsSignature.length === 0 && (
-              <div className="text-center py-16">
-                <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <FileText className="h-8 w-8 text-muted-foreground/50" />
-                </div>
-                <h3 className="text-lg font-medium">No signatures needed</h3>
-                <p className="text-muted-foreground text-sm mt-1">There are no documents waiting for your signature.</p>
-              </div>
+              <EmptyState
+                variant="documents"
+                title="No signatures needed"
+                description="There are no documents waiting for your signature."
+              />
             )}
           </div>
         </TabsContent>
@@ -536,25 +532,21 @@ export function InboxPage() {
               ))}
             </AnimatePresence>
             {needsApproval.length === 0 && (
-              <div className="text-center py-16">
-                <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <CheckCircle2 className="h-8 w-8 text-muted-foreground/50" />
-                </div>
-                <h3 className="text-lg font-medium">No approvals needed</h3>
-                <p className="text-muted-foreground text-sm mt-1">There are no documents waiting for your approval.</p>
-              </div>
+              <EmptyState
+                variant="inbox"
+                title="No approvals needed"
+                description="There are no documents waiting for your approval."
+              />
             )}
           </div>
         </TabsContent>
 
         <TabsContent value="completed" className="mt-4">
-          <div className="text-center py-16">
-            <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <CheckCircle2 className="h-8 w-8 text-muted-foreground/50" />
-            </div>
-            <h3 className="text-lg font-medium">Completed items</h3>
-            <p className="text-muted-foreground text-sm mt-1">Documents you have already actioned will appear here.</p>
-          </div>
+          <EmptyState
+            variant="inbox"
+            title="Completed items"
+            description="Documents you have already actioned will appear here."
+          />
         </TabsContent>
       </Tabs>
 

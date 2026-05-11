@@ -43,6 +43,7 @@ import {
 import { Search, ShieldCheck, Download, Filter, FileJson, FileSpreadsheet, FileText, MapPin, Clock, ChevronRight, X, RefreshCw, AlertTriangle, Info, AlertCircle, XCircle } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { EmptyState } from './EmptyState';
 
 const actionTypes: { value: string; label: string }[] = [
   { value: 'document.created', label: 'Document Created' },
@@ -494,17 +495,11 @@ export function AuditLogsPage() {
           </CardContent>
         </Card>
       ) : filteredLogs.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-16"
-        >
-          <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-            <ShieldCheck className="h-8 w-8 text-muted-foreground/50" />
-          </div>
-          <h3 className="text-lg font-medium">No audit logs found</h3>
-          <p className="text-muted-foreground text-sm mt-1">Try adjusting your filters.</p>
-        </motion.div>
+        <EmptyState
+          variant="audit"
+          title="No audit logs found"
+          description="Try adjusting your filters to find what you're looking for."
+        />
       ) : (
         <Card>
           <Table>
@@ -534,7 +529,9 @@ export function AuditLogsPage() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="cursor-pointer hover:bg-accent/50 border-b border-border"
+                      className={`cursor-pointer hover:bg-accent/50 border-b border-border transition-colors ${
+                        i % 2 === 0 ? 'bg-muted/10' : ''
+                      }`}
                       onClick={() => openLogDetail(log)}
                     >
                       <TableCell>

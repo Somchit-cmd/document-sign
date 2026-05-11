@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import dynamic from 'next/dynamic';
 import { useAppStore } from '@/lib/store';
 import { api, mockDocuments, formatFileSize } from '@/lib/api';
 import type { Document, Comment } from '@/lib/types';
@@ -15,6 +16,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { SignatureCanvas } from './SignatureCanvas';
 import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
 import {
@@ -40,9 +51,22 @@ import {
   Highlighter,
   ListChecks,
   FileSearch,
+  Printer,
+  Share2,
+  History,
+  Mail,
+  Copy,
+  Check,
+  ExternalLink,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const PDFViewer = dynamic(
+  () => import('./PDFViewer').then((mod) => ({ default: mod.PDFViewer })),
+  { ssr: false }
+);
 
 // ====== AI Summary Tab ======
 function AISummaryTab({ docId }: { docId: string }) {
@@ -95,7 +119,7 @@ function AISummaryTab({ docId }: { docId: string }) {
       <div className="flex flex-wrap gap-2">
         <Button
           size="sm"
-          className="gap-1.5"
+          className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
           onClick={generateSummary}
           disabled={isLoadingSummary}
         >
@@ -144,7 +168,7 @@ function AISummaryTab({ docId }: { docId: string }) {
                   <ul className="space-y-1.5">
                     {keyPoints.map((point, i) => (
                       <li key={i} className="text-sm flex items-start gap-2">
-                        <span className="text-primary mt-1 shrink-0">•</span>
+                        <span className="text-emerald-600 mt-1 shrink-0">•</span>
                         <span>{point}</span>
                       </li>
                     ))}
@@ -171,7 +195,7 @@ function AISummaryTab({ docId }: { docId: string }) {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <FileSearch className="h-4 w-4 text-blue-500" />
+              <FileSearch className="h-4 w-4 text-teal-500" />
               Extracted Clauses
               <Badge variant="secondary" className="text-[10px]">{clauses.length}</Badge>
             </CardTitle>
@@ -287,14 +311,14 @@ function AIChatPanel({ docId }: { docId: string }) {
           {messages.map((msg, i) => (
             <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'assistant' && (
-                <div className="shrink-0 h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Bot className="h-3.5 w-3.5 text-primary" />
+                <div className="shrink-0 h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                  <Bot className="h-3.5 w-3.5 text-emerald-600" />
                 </div>
               )}
               <div
                 className={`max-w-[80%] rounded-lg px-3 py-2 text-xs leading-relaxed ${
                   msg.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-emerald-600 text-white'
                     : 'bg-muted'
                 }`}
               >
@@ -304,8 +328,8 @@ function AIChatPanel({ docId }: { docId: string }) {
           ))}
           {isLoading && (
             <div className="flex gap-2">
-              <div className="shrink-0 h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-                <Bot className="h-3.5 w-3.5 text-primary" />
+              <div className="shrink-0 h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <Bot className="h-3.5 w-3.5 text-emerald-600" />
               </div>
               <div className="bg-muted rounded-lg px-3 py-2 flex items-center gap-2">
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -333,7 +357,7 @@ function AIChatPanel({ docId }: { docId: string }) {
         />
         <Button
           size="icon"
-          className="h-8 w-8 shrink-0"
+          className="h-8 w-8 shrink-0 bg-emerald-600 hover:bg-emerald-700"
           onClick={() => sendMessage(input)}
           disabled={!input.trim() || isLoading}
         >
@@ -344,11 +368,11 @@ function AIChatPanel({ docId }: { docId: string }) {
   );
 }
 
-// ====== Activity Timeline ======
+// ====== Activity Timeline (Enhanced) ======
 function ActivityTimeline({ document }: { document: Document }) {
   const timelineEvents = [
-    { id: '1', action: 'Document created', user: document.owner, time: document.createdAt, icon: <FileText className="h-4 w-4 text-blue-500" />, color: 'bg-blue-500' },
-    ...(document.status !== 'draft' ? [{ id: '2', action: 'Document sent for signature', user: document.sender || document.owner, time: document.createdAt, icon: <Send className="h-4 w-4 text-cyan-500" />, color: 'bg-cyan-500' }] : []),
+    { id: '1', action: 'Document created', user: document.owner, time: document.createdAt, icon: <FileText className="h-3.5 w-3.5 text-white" />, color: 'bg-teal-500' },
+    ...(document.status !== 'draft' ? [{ id: '2', action: 'Document sent for signature', user: document.sender || document.owner, time: document.createdAt, icon: <Send className="h-3.5 w-3.5 text-white" />, color: 'bg-cyan-500' }] : []),
     ...document.recipients
       .filter((r) => r.status === 'viewed' || r.status === 'signed')
       .map((r, i) => ({
@@ -356,32 +380,34 @@ function ActivityTimeline({ document }: { document: Document }) {
         action: `${r.user.name} ${r.status === 'signed' ? 'signed' : 'viewed'} the document`,
         user: r.user,
         time: r.signedAt || document.updatedAt,
-        icon: r.status === 'signed' ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Eye className="h-4 w-4 text-slate-500" />,
+        icon: r.status === 'signed' ? <CheckCircle2 className="h-3.5 w-3.5 text-white" /> : <Eye className="h-3.5 w-3.5 text-white" />,
         color: r.status === 'signed' ? 'bg-emerald-500' : 'bg-slate-400',
       })),
-    ...(document.status === 'completed' ? [{ id: '3', action: 'Document completed', user: document.owner, time: document.completedAt || document.updatedAt, icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" />, color: 'bg-emerald-500' }] : []),
-    ...(document.status === 'rejected' ? [{ id: '4', action: 'Document rejected', user: document.recipients[0]?.user || document.owner, time: document.updatedAt, icon: <XCircle className="h-4 w-4 text-red-500" />, color: 'bg-red-500' }] : []),
+    ...(document.status === 'completed' ? [{ id: '3', action: 'Document completed', user: document.owner, time: document.completedAt || document.updatedAt, icon: <CheckCircle2 className="h-3.5 w-3.5 text-white" />, color: 'bg-emerald-500' }] : []),
+    ...(document.status === 'rejected' ? [{ id: '4', action: 'Document rejected', user: document.recipients[0]?.user || document.owner, time: document.updatedAt, icon: <XCircle className="h-3.5 w-3.5 text-white" />, color: 'bg-red-500' }] : []),
   ].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
   return (
     <ScrollArea className="h-96">
       <div className="relative">
-        {/* Timeline line */}
-        <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-border" />
-
-        <div className="space-y-4">
+        <div className="space-y-0">
           {timelineEvents.map((event, index) => (
             <div key={event.id} className="flex gap-3 relative">
-              {/* Dot */}
-              <div className={`shrink-0 w-6 h-6 rounded-full ${event.color} flex items-center justify-center ring-4 ring-background z-10`}>
-                <div className="scale-75">{event.icon}</div>
+              {/* Vertical connector line */}
+              {index < timelineEvents.length - 1 && (
+                <div className="absolute left-[11px] top-6 bottom-0 w-0.5 bg-gradient-to-b from-border to-border/30" />
+              )}
+
+              {/* Dot with icon */}
+              <div className={`shrink-0 w-6 h-6 rounded-full ${event.color} flex items-center justify-center ring-4 ring-background z-10 shadow-sm`}>
+                {event.icon}
               </div>
 
-              <div className="flex-1 min-w-0 pb-2">
+              <div className="flex-1 min-w-0 pb-4">
                 <p className="text-sm font-medium">{event.action}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <Avatar className="h-4 w-4">
-                    <AvatarFallback className="text-[6px] bg-primary/10 text-primary">
+                  <Avatar className="h-5 w-5">
+                    <AvatarFallback className="text-[7px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
                       {event.user.name.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
@@ -405,198 +431,213 @@ function ActivityTimeline({ document }: { document: Document }) {
   );
 }
 
-// ====== Signing Panel ======
-function SigningPanel({ document, docId }: { document: Document; docId: string }) {
-  const queryClient = useQueryClient();
-  const [signMode, setSignMode] = useState<'draw' | 'type'>('draw');
-  const [typedSignature, setTypedSignature] = useState('');
-  const [isDrawing, setIsDrawing] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [hasDrawn, setHasDrawn] = useState(false);
-
-  const signMutation = useMutation({
-    mutationFn: async (signatureData: string) => {
-      return api.signDocument(docId, { signatureData, type: signMode === 'draw' ? 'drawn' : 'typed' });
-    },
-    onSuccess: () => {
-      toast.success('Document signed successfully');
-      queryClient.invalidateQueries({ queryKey: ['document', docId] });
-    },
-    onError: () => {
-      toast.error('Failed to sign document');
-    },
-  });
-
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
-    setIsDrawing(true);
-    const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-    ctx.strokeStyle = '#1a1a1a';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !canvasRef.current) return;
-    const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-    ctx.stroke();
-    setHasDrawn(true);
-  };
-
-  const stopDrawing = () => {
-    setIsDrawing(false);
-  };
-
-  const clearSignature = () => {
-    if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext('2d');
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    setHasDrawn(false);
-  };
-
-  const handleSign = () => {
-    if (signMode === 'draw') {
-      if (!hasDrawn) {
-        toast.error('Please draw your signature');
-        return;
-      }
-      const dataUrl = canvasRef.current?.toDataURL('image/png') || '';
-      signMutation.mutate(dataUrl);
-    } else {
-      if (!typedSignature.trim()) {
-        toast.error('Please type your signature');
-        return;
-      }
-      signMutation.mutate(typedSignature);
-    }
-  };
-
-  const canSign = document.status === 'sent' || document.status === 'viewed';
-
-  if (!canSign) {
-    return (
-      <div className="text-center py-8">
-        {document.status === 'completed' || document.status === 'signed' ? (
-          <>
-            <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500 mb-3" />
-            <p className="text-sm font-medium">Document Signed</p>
-            <p className="text-xs text-muted-foreground mt-1">This document has been fully signed</p>
-          </>
-        ) : document.status === 'rejected' ? (
-          <>
-            <XCircle className="mx-auto h-10 w-10 text-red-500 mb-3" />
-            <p className="text-sm font-medium">Document Rejected</p>
-            <p className="text-xs text-muted-foreground mt-1">This document has been rejected</p>
-          </>
-        ) : (
-          <>
-            <FileText className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
-            <p className="text-sm font-medium">Not Ready for Signing</p>
-            <p className="text-xs text-muted-foreground mt-1">This document is still in draft</p>
-          </>
-        )}
-      </div>
-    );
-  }
+// ====== Version History ======
+function VersionHistory({ document }: { document: Document }) {
+  const versions = [
+    { id: 'v3', version: 3, label: 'Current version', user: document.owner, time: document.updatedAt, changes: 'Added signature fields' },
+    { id: 'v2', version: 2, label: 'Updated', user: document.sender || document.owner, time: document.createdAt, changes: 'Sent for signature' },
+    { id: 'v1', version: 1, label: 'Created', user: document.owner, time: document.createdAt, changes: 'Initial upload' },
+  ];
 
   return (
-    <div className="space-y-4">
-      {/* Mode toggle */}
-      <div className="flex gap-1 p-1 bg-muted rounded-md">
-        <Button
-          variant={signMode === 'draw' ? 'default' : 'ghost'}
-          size="sm"
-          className="flex-1 h-7 text-xs"
-          onClick={() => setSignMode('draw')}
-        >
-          <PenLine className="mr-1.5 h-3 w-3" />
-          Draw
-        </Button>
-        <Button
-          variant={signMode === 'type' ? 'default' : 'ghost'}
-          size="sm"
-          className="flex-1 h-7 text-xs"
-          onClick={() => setSignMode('type')}
-        >
-          <Type className="mr-1.5 h-3 w-3" />
-          Type
-        </Button>
-      </div>
-
-      {signMode === 'draw' ? (
-        <div className="space-y-2">
-          <div className="border-2 border-dashed rounded-lg overflow-hidden bg-white dark:bg-gray-800">
-            <canvas
-              ref={canvasRef}
-              width={320}
-              height={120}
-              className="w-full cursor-crosshair"
-              onMouseDown={startDrawing}
-              onMouseMove={draw}
-              onMouseUp={stopDrawing}
-              onMouseLeave={stopDrawing}
-            />
+    <div className="space-y-3">
+      {versions.map((v, i) => (
+        <div key={v.id} className="flex items-start gap-3 group">
+          <div className="shrink-0 w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+            v{v.version}
           </div>
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] text-muted-foreground">Draw your signature above</p>
-            <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1" onClick={clearSignature}>
-              <RotateCcw className="h-2.5 w-2.5" />
-              Clear
-            </Button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">{v.label}</p>
+              {i === 0 && (
+                <Badge className="text-[9px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-0">
+                  Current
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">{v.changes}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <Avatar className="h-4 w-4">
+                <AvatarFallback className="text-[6px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                  {v.user.name.split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-[10px] text-muted-foreground">
+                {v.user.name} · {formatDistanceToNow(new Date(v.time), { addSuffix: true })}
+              </span>
+            </div>
           </div>
         </div>
-      ) : (
-        <div className="space-y-2">
-          <Input
-            placeholder="Type your full name"
-            value={typedSignature}
-            onChange={(e) => setTypedSignature(e.target.value)}
-            className="text-center"
-          />
-          {typedSignature && (
-            <div className="border-2 border-dashed rounded-lg p-4 bg-white dark:bg-gray-800 text-center">
-              <p className="text-2xl font-cursive italic text-gray-800 dark:text-gray-200">
-                {typedSignature}
-              </p>
+      ))}
+    </div>
+  );
+}
+
+// ====== Share Dialog ======
+function ShareDialog({ open, onOpenChange, document }: { open: boolean; onOpenChange: (open: boolean) => void; document: Document }) {
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareMessage, setShareMessage] = useState('');
+  const [shareRole, setShareRole] = useState('viewer');
+  const [copied, setCopied] = useState(false);
+  const [shareLink] = useState(`https://docsign.app/d/${document.id}?share=token`);
+
+  const handleCopyLink = useCallback(() => {
+    navigator.clipboard.writeText(shareLink).then(() => {
+      setCopied(true);
+      toast.success('Link copied to clipboard');
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      toast.error('Failed to copy link');
+    });
+  }, [shareLink]);
+
+  const handleShareByEmail = useCallback(() => {
+    if (!shareEmail.trim()) {
+      toast.error('Please enter an email address');
+      return;
+    }
+    toast.success(`Shared with ${shareEmail}`);
+    setShareEmail('');
+    setShareMessage('');
+  }, [shareEmail]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Share2 className="h-4 w-4 text-emerald-600" />
+            Share Document
+          </DialogTitle>
+          <DialogDescription>
+            Share &quot;{document.title}&quot; with others
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Share link */}
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Share Link</Label>
+            <div className="flex gap-2">
+              <Input
+                value={shareLink}
+                readOnly
+                className="text-xs h-8"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 shrink-0 gap-1.5"
+                onClick={handleCopyLink}
+              >
+                {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+                {copied ? 'Copied' : 'Copy'}
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Share by email */}
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Share by Email</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter email address"
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e.target.value)}
+                className="text-xs h-8"
+                type="email"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 shrink-0"
+                onClick={() => setShareRole(shareRole === 'viewer' ? 'signer' : 'viewer')}
+              >
+                {shareRole === 'viewer' ? 'Viewer' : 'Signer'}
+              </Button>
+            </div>
+            <Textarea
+              placeholder="Add a message (optional)"
+              value={shareMessage}
+              onChange={(e) => setShareMessage(e.target.value)}
+              className="text-xs min-h-[60px]"
+            />
+            <Button
+              size="sm"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 gap-1.5"
+              onClick={handleShareByEmail}
+              disabled={!shareEmail.trim()}
+            >
+              <Mail className="h-3.5 w-3.5" />
+              Send Invitation
+            </Button>
+          </div>
+
+          <Separator />
+
+          {/* Current recipients */}
+          {document.recipients.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Current Recipients</Label>
+              <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                {document.recipients.map((r) => (
+                  <div key={r.id} className="flex items-center gap-2 p-1.5 rounded-md bg-muted/50">
+                    <Avatar className="h-5 w-5">
+                      <AvatarFallback className="text-[7px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                        {r.user.name.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs flex-1 truncate">{r.user.name}</span>
+                    <Badge variant="outline" className="text-[9px] capitalize">{r.role}</Badge>
+                    <StatusBadge status={r.status} />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
-      )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-      <div className="flex gap-2">
-        <Button
-          className="flex-1 gap-1.5"
-          onClick={handleSign}
-          disabled={signMutation.isPending}
-        >
-          {signMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PenLine className="h-3.5 w-3.5" />}
-          {signMutation.isPending ? 'Signing...' : 'Sign Document'}
-        </Button>
-        <Button
-          variant="outline"
-          className="gap-1.5 text-destructive hover:text-destructive"
-          onClick={() => {
-            const reason = prompt('Reason for rejection:');
-            if (reason) {
-              api.rejectDocument(docId, reason).then(() => {
-                toast.success('Document rejected');
-                queryClient.invalidateQueries({ queryKey: ['document', docId] });
-              });
-            }
-          }}
-        >
-          <XCircle className="h-3.5 w-3.5" />
-          Reject
-        </Button>
+// ====== Signing Progress Indicator ======
+function SigningProgress({ document }: { document: Document }) {
+  const total = document.recipients.filter(r => r.role === 'signer').length;
+  const signed = document.recipients.filter(r => r.role === 'signer' && r.status === 'signed').length;
+  const percentage = total > 0 ? Math.round((signed / total) * 100) : 0;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">Signing Progress</span>
+        <span className="font-medium">{signed}/{total} completed</span>
+      </div>
+      <Progress value={percentage} className="h-2" />
+      <div className="flex items-center gap-1">
+        {document.recipients.filter(r => r.role === 'signer').map((r, i) => (
+          <div key={r.id} className="flex items-center gap-1">
+            {i > 0 && <div className="w-4 h-px bg-border" />}
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] ${
+              r.status === 'signed'
+                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                : r.status === 'declined'
+                  ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+            }`}>
+              {r.status === 'signed' ? (
+                <CheckCircle2 className="h-3 w-3" />
+              ) : r.status === 'declined' ? (
+                <XCircle className="h-3 w-3" />
+              ) : (
+                <Clock className="h-3 w-3" />
+              )}
+              <span className="hidden sm:inline">{r.user.name.split(' ')[0]}</span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -626,7 +667,6 @@ function CommentThread({ docId, comments: initialComments }: { docId: string; co
     setCommentText('');
   };
 
-  // Group comments into threads (top-level + replies)
   const topLevelComments = comments.filter((c) => !c.parentId);
   const getReplies = (parentId: string) => comments.filter((c) => c.parentId === parentId);
 
@@ -636,10 +676,9 @@ function CommentThread({ docId, comments: initialComments }: { docId: string; co
         <div className="space-y-4 pr-2">
           {topLevelComments.map((comment) => (
             <div key={comment.id} className="space-y-2">
-              {/* Main comment */}
               <div className="flex gap-3">
                 <Avatar className="h-7 w-7 shrink-0">
-                  <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                  <AvatarFallback className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
                     {comment.author.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
@@ -653,12 +692,10 @@ function CommentThread({ docId, comments: initialComments }: { docId: string; co
                   <p className="text-sm mt-0.5">{comment.content}</p>
                 </div>
               </div>
-
-              {/* Replies */}
               {getReplies(comment.id).map((reply) => (
                 <div key={reply.id} className="flex gap-3 ml-8">
                   <Avatar className="h-6 w-6 shrink-0">
-                    <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                    <AvatarFallback className="text-[8px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
                       {reply.author.name.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
@@ -687,7 +724,6 @@ function CommentThread({ docId, comments: initialComments }: { docId: string; co
 
       <Separator />
 
-      {/* Add comment */}
       <div className="flex gap-2">
         <Textarea
           placeholder="Add a comment... (use @mention to tag someone)"
@@ -697,7 +733,7 @@ function CommentThread({ docId, comments: initialComments }: { docId: string; co
         />
         <Button
           size="sm"
-          className="bg-primary hover:bg-primary/90 self-end shrink-0"
+          className="bg-emerald-600 hover:bg-emerald-700 self-end shrink-0"
           disabled={!commentText.trim() || addCommentMutation.isPending}
           onClick={handleSubmit}
         >
@@ -710,8 +746,10 @@ function CommentThread({ docId, comments: initialComments }: { docId: string; co
 
 // ====== Main Document Detail Page ======
 export function DocumentDetailPage() {
-  const { navigate, pageParams } = useAppStore();
+  const { navigate, pageParams, user } = useAppStore();
   const [activeTab, setActiveTab] = useState('overview');
+  const [signDialogOpen, setSignDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   const docId = pageParams?.id as string;
 
@@ -742,6 +780,48 @@ export function DocumentDetailPage() {
 
   const document: Document = documentData || mockDocuments.find((d) => d.id === docId) || mockDocuments[0];
   const comments: Comment[] = commentsData || [];
+
+  // Sign mutation
+  const signMutation = useMutation({
+    mutationFn: async ({ signatureData, type }: { signatureData: string; type: 'drawn' | 'typed' | 'uploaded' }) => {
+      return api.signDocument(docId, { signatureData, type });
+    },
+    onSuccess: () => {
+      toast.success('Document signed successfully');
+      setSignDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['document', docId] });
+    },
+    onError: () => {
+      toast.error('Failed to sign document');
+    },
+  });
+
+  const queryClient = useQueryClient();
+
+  const handleSign = useCallback((signatureData: string, type: 'drawn' | 'typed' | 'uploaded') => {
+    signMutation.mutate({ signatureData, type });
+  }, [signMutation]);
+
+  const handlePrint = useCallback(() => {
+    window.print();
+    toast.success('Print dialog opened');
+  }, []);
+
+  const handleDownload = useCallback(() => {
+    toast.success('Download started');
+    // In a real app, this would download the actual file
+    const anchor = window.document.createElement('a');
+    anchor.href = document.fileUrl || '#';
+    anchor.download = document.fileName || 'document.pdf';
+    anchor.click();
+  }, [document]);
+
+  const canSign = document.status === 'sent' || document.status === 'viewed';
+
+  // Signature areas for PDF viewer
+  const signatureAreas = document.fields
+    .filter(f => f.type === 'signature')
+    .map(f => ({ x: f.x, y: f.y, width: f.width, height: f.height, label: f.label }));
 
   if (isLoading) {
     return (
@@ -782,68 +862,62 @@ export function DocumentDetailPage() {
         </div>
       </div>
 
+      {/* Signing progress */}
+      {document.recipients.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <SigningProgress document={document} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Actions bar */}
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" className="bg-primary hover:bg-primary/90">
-          <Send className="mr-2 h-4 w-4" />
-          Send
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => navigate('document-editor', { id: document.id })}>
-          <Edit3 className="mr-2 h-4 w-4" />
+        {canSign && (
+          <Button
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700"
+            onClick={() => setSignDialogOpen(true)}
+          >
+            <PenLine className="mr-2 h-4 w-4" />
+            Sign Document
+          </Button>
+        )}
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate('document-editor', { id: document.id })}>
+          <Edit3 className="h-4 w-4" />
           Edit
         </Button>
-        <Button variant="outline" size="sm">
-          <Download className="mr-2 h-4 w-4" />
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={handleDownload}>
+          <Download className="h-4 w-4" />
           Download
         </Button>
-        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
-          <Trash2 className="mr-2 h-4 w-4" />
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={handlePrint}>
+          <Printer className="h-4 w-4" />
+          Print
+        </Button>
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setShareDialogOpen(true)}>
+          <Share2 className="h-4 w-4" />
+          Share
+        </Button>
+        <Button size="sm" variant="outline" className="gap-1.5 text-destructive hover:text-destructive">
+          <Trash2 className="h-4 w-4" />
           Void
         </Button>
       </div>
 
       {/* Main content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Document preview */}
+        {/* Document preview - now using PDFViewer */}
         <div className="lg:col-span-2">
-          <Card>
-            <CardContent className="p-6">
-              {/* PDF placeholder */}
-              <div className="bg-muted/30 rounded-lg border-2 border-dashed border-border h-[600px] flex flex-col items-center justify-center">
-                <FileText className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground text-sm font-medium">PDF Preview</p>
-                <p className="text-muted-foreground text-xs mt-1">
-                  {document.pageCount} page{document.pageCount !== 1 ? 's' : ''} · {formatFileSize(document.fileSize)}
-                </p>
-                <div className="flex gap-2 mt-4">
-                  <Button variant="outline" size="sm">
-                    <Eye className="mr-2 h-4 w-4" />
-                    Open Full Preview
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => navigate('document-editor', { id: document.id })}>
-                    <Edit3 className="mr-2 h-4 w-4" />
-                    Open Editor
-                  </Button>
-                </div>
-
-                {/* Field indicators on preview */}
-                {document.fields.length > 0 && (
-                  <div className="mt-6 flex flex-wrap gap-2 justify-center">
-                    {document.fields.map((field) => (
-                      <Badge key={field.id} variant="outline" className="text-[10px] capitalize">
-                        {field.type === 'signature' && <PenLine className="mr-1 h-3 w-3" />}
-                        {field.type === 'date' && <Clock className="mr-1 h-3 w-3" />}
-                        {field.type === 'text' && <Type className="mr-1 h-3 w-3" />}
-                        {field.type === 'checkbox' && <SquareCheck className="mr-1 h-3 w-3" />}
-                        {field.label}
-                        {field.isCompleted && <CheckCircle2 className="ml-1 h-3 w-3 text-emerald-500" />}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <PDFViewer
+            fileUrl={document.fileUrl}
+            fileName={document.fileName}
+            title={document.title}
+            pageCount={document.pageCount}
+            fileSize={document.fileSize}
+            isPlaceholder={!document.fileUrl || document.fileUrl === '#'}
+            signatureAreas={signatureAreas}
+          />
         </div>
 
         {/* Sidebar */}
@@ -868,7 +942,7 @@ export function DocumentDetailPage() {
                     <span className="text-muted-foreground">Owner</span>
                     <div className="flex items-center gap-1.5">
                       <Avatar className="h-4 w-4">
-                        <AvatarFallback className="text-[6px] bg-primary/10 text-primary">
+                        <AvatarFallback className="text-[6px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
                           {document.owner.name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
@@ -899,10 +973,20 @@ export function DocumentDetailPage() {
                     <span className="text-muted-foreground">Folder</span>
                     <span>{document.folder || '—'}</span>
                   </div>
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Size</span>
+                    <span>{formatFileSize(document.fileSize)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Pages</span>
+                    <span>{document.pageCount}</span>
+                  </div>
                 </CardContent>
               </Card>
 
-              {/* Recipients */}
+              {/* Recipients with avatars and status */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs">Recipients</CardTitle>
@@ -910,9 +994,9 @@ export function DocumentDetailPage() {
                 <CardContent>
                   <div className="space-y-2">
                     {document.recipients.map((recipient) => (
-                      <div key={recipient.id} className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                      <div key={recipient.id} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-muted/50 transition-colors">
+                        <Avatar className="h-7 w-7">
+                          <AvatarFallback className="text-[9px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
                             {recipient.user.name.split(' ').map(n => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
@@ -920,13 +1004,32 @@ export function DocumentDetailPage() {
                           <p className="text-xs font-medium truncate">{recipient.user.name}</p>
                           <p className="text-[10px] text-muted-foreground capitalize">{recipient.role}</p>
                         </div>
-                        <StatusBadge status={recipient.status} />
+                        <div className="flex items-center gap-1">
+                          {recipient.status === 'signed' && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
+                          {recipient.status === 'pending' && <Clock className="h-3.5 w-3.5 text-amber-500" />}
+                          {recipient.status === 'declined' && <XCircle className="h-3.5 w-3.5 text-red-500" />}
+                          {recipient.status === 'viewed' && <Eye className="h-3.5 w-3.5 text-slate-500" />}
+                          <span className="text-[10px] capitalize text-muted-foreground">{recipient.status}</span>
+                        </div>
                       </div>
                     ))}
                     {document.recipients.length === 0 && (
                       <p className="text-xs text-muted-foreground text-center py-3">No recipients yet</p>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Version History */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs flex items-center gap-1.5">
+                    <History className="h-3.5 w-3.5" />
+                    Version History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <VersionHistory document={document} />
                 </CardContent>
               </Card>
 
@@ -966,7 +1069,58 @@ export function DocumentDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <SigningPanel document={document} docId={docId} />
+                  {canSign ? (
+                    <div className="space-y-3">
+                      <p className="text-xs text-muted-foreground">
+                        Review the document and add your signature when ready.
+                      </p>
+                      <Button
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 gap-1.5"
+                        onClick={() => setSignDialogOpen(true)}
+                      >
+                        <PenLine className="h-4 w-4" />
+                        Open Signature Pad
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full gap-1.5 text-destructive hover:text-destructive"
+                        onClick={() => {
+                          const reason = prompt('Reason for rejection:');
+                          if (reason) {
+                            api.rejectDocument(docId, reason).then(() => {
+                              toast.success('Document rejected');
+                              queryClient.invalidateQueries({ queryKey: ['document', docId] });
+                            });
+                          }
+                        }}
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Reject Document
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      {document.status === 'completed' || document.status === 'signed' ? (
+                        <>
+                          <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500 mb-3" />
+                          <p className="text-sm font-medium">Document Signed</p>
+                          <p className="text-xs text-muted-foreground mt-1">This document has been fully signed</p>
+                        </>
+                      ) : document.status === 'rejected' ? (
+                        <>
+                          <XCircle className="mx-auto h-10 w-10 text-red-500 mb-3" />
+                          <p className="text-sm font-medium">Document Rejected</p>
+                          <p className="text-xs text-muted-foreground mt-1">This document has been rejected</p>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
+                          <p className="text-sm font-medium">Not Ready for Signing</p>
+                          <p className="text-xs text-muted-foreground mt-1">This document is still in draft</p>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -983,7 +1137,7 @@ export function DocumentDetailPage() {
                   <CommentThread docId={docId} comments={comments} />
                   <Separator className="my-3" />
                   <div className="flex items-center gap-1.5 mb-2">
-                    <Bot className="h-3.5 w-3.5 text-primary" />
+                    <Bot className="h-3.5 w-3.5 text-emerald-600" />
                     <span className="text-xs font-medium">AI Chat</span>
                   </div>
                   <AIChatPanel docId={docId} />
@@ -993,6 +1147,34 @@ export function DocumentDetailPage() {
           </Tabs>
         </div>
       </div>
+
+      {/* Sign Document Dialog */}
+      <Dialog open={signDialogOpen} onOpenChange={setSignDialogOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PenLine className="h-4 w-4 text-emerald-600" />
+              Sign Document
+            </DialogTitle>
+            <DialogDescription>
+              Add your signature to &quot;{document.title}&quot;
+            </DialogDescription>
+          </DialogHeader>
+          <SignatureCanvas
+            onApply={handleSign}
+            onCancel={() => setSignDialogOpen(false)}
+            signerName={user?.name || ''}
+            isSubmitting={signMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Dialog */}
+      <ShareDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        document={document}
+      />
     </div>
   );
 }

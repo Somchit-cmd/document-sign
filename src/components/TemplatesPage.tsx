@@ -45,6 +45,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { useAppStore } from '@/lib/store';
+import { EmptyState } from './EmptyState';
 
 const categories: { value: TemplateCategory | 'all'; label: string; icon?: React.ReactNode }[] = [
   { value: 'all', label: 'All' },
@@ -428,19 +429,15 @@ export function TemplatesPage() {
         </div>
       ) : filteredTemplates.length === 0 ? (
         /* Empty state */
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-20"
-        >
-          <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-            <LayoutTemplate className="h-8 w-8 text-muted-foreground/50" />
-          </div>
-          <h3 className="text-lg font-medium mb-1">No templates found</h3>
-          <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-            Try adjusting your search or category filter, or create a new template.
-          </p>
-        </motion.div>
+        <EmptyState
+          variant="templates"
+          title="No templates found"
+          description="Try adjusting your search or category filter, or create a new template."
+          action={{
+            label: 'Create Template',
+            onClick: () => {},
+          }}
+        />
       ) : (
         /* Template grid */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

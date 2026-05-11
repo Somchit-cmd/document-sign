@@ -129,12 +129,15 @@ export function NotificationPanel({ children }: NotificationPanelProps) {
 
           return (
             <div key={notification.id} className="relative">
-              <button
+              <div
                 className={cn(
-                  'w-full text-left p-3 hover:bg-accent/50 transition-colors flex gap-3',
+                  'w-full text-left p-3 hover:bg-accent/50 transition-colors flex gap-3 cursor-pointer',
                   !notification.isRead && 'bg-primary/5'
                 )}
                 onClick={() => handleNotificationClick(notification)}
+                role="row"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleNotificationClick(notification); }}
               >
                 {/* Type icon */}
                 <div className={`mt-0.5 shrink-0 rounded-lg p-1.5 ${config.bgColor}`}>
@@ -164,15 +167,17 @@ export function NotificationPanel({ children }: NotificationPanelProps) {
                   </div>
                 </div>
 
-                {/* Dismiss button */}
-                <button
-                  className="shrink-0 opacity-0 group-hover:opacity-100 hover:opacity-100 p-0.5 rounded transition-opacity"
+                {/* Dismiss - use div instead of button to avoid nesting */}
+                <div
+                  className="shrink-0 opacity-0 group-hover:opacity-100 hover:opacity-100 p-0.5 rounded transition-opacity cursor-pointer"
                   onClick={(e) => handleDismiss(e, notification.id)}
                   title="Dismiss"
+                  role="button"
+                  tabIndex={-1}
                 >
                   <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                </button>
-              </button>
+                </div>
+              </div>
               <Separator />
             </div>
           );

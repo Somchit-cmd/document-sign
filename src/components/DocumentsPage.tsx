@@ -30,11 +30,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -64,6 +59,11 @@ import {
   Tag,
   X,
   Inbox,
+  Handshake,
+  Receipt,
+  ClipboardList,
+  Scale,
+  Sparkles,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -101,6 +101,68 @@ const categoryOptions = [
   'Contract', 'Agreement', 'NDA', 'Proposal', 'Invoice', 'HR', 'Legal', 'Finance',
 ];
 
+// Category icons map
+const categoryIcons: Record<string, { icon: React.ReactNode; color: string }> = {
+  'contract': { icon: <FileText className="h-3.5 w-3.5" />, color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' },
+  'agreement': { icon: <Handshake className="h-3.5 w-3.5" />, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  'nda': { icon: <Scale className="h-3.5 w-3.5" />, color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+  'invoice': { icon: <Receipt className="h-3.5 w-3.5" />, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  'hr': { icon: <User className="h-3.5 w-3.5" />, color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' },
+  'legal': { icon: <ClipboardList className="h-3.5 w-3.5" />, color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  'proposal': { icon: <Sparkles className="h-3.5 w-3.5" />, color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' },
+  'finance': { icon: <Receipt className="h-3.5 w-3.5" />, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+};
+
+function getCategoryIcon(category: string) {
+  const lower = (category || 'document').toLowerCase();
+  return categoryIcons[lower] || { icon: <FileText className="h-3.5 w-3.5" />, color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' };
+}
+
+// Mini circular progress indicator for signature progress
+function CircularProgress({ value, size = 28 }: { value: number; size?: number }) {
+  const strokeWidth = 3;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (value / 100) * circumference;
+
+  return (
+    <svg width={size} height={size} className="shrink-0">
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="var(--muted)"
+        strokeWidth={strokeWidth}
+      />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="var(--primary)"
+        strokeWidth={strokeWidth}
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        className="transition-all duration-500"
+      />
+    </svg>
+  );
+}
+
+// "New" badge for recently created documents
+function NewBadge({ createdAt }: { createdAt: string }) {
+  const isNew = Date.now() - new Date(createdAt).getTime() < 24 * 60 * 60 * 1000;
+  if (!isNew) return null;
+  return (
+    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[9px] px-1.5 py-0 border-0 animate-pulse">
+      NEW
+    </Badge>
+  );
+}
+
 // Signature progress bar component
 function SignatureProgressBar({ doc }: { doc: Document }) {
   const total = doc.recipients.length || doc.signatures.length || 1;
@@ -109,7 +171,7 @@ function SignatureProgressBar({ doc }: { doc: Document }) {
 
   return (
     <div className="flex items-center gap-2">
-      <Progress value={percentage} className="h-1.5 flex-1" />
+      <CircularProgress value={percentage} size={24} />
       <span className="text-xs text-muted-foreground whitespace-nowrap">
         {completed}/{total}
       </span>
@@ -132,6 +194,7 @@ function EnhancedDocumentCard({
   const signedCount = document.signatures.filter(s => s.signedAt).length;
   const totalSigners = document.recipients.length || document.signatures.length;
   const category = document.tags?.[0] || document.folder || 'Document';
+  const catIcon = getCategoryIcon(category);
 
   return (
     <motion.div
@@ -142,8 +205,8 @@ function EnhancedDocumentCard({
       transition={{ duration: 0.2 }}
     >
       <Card
-        className={`cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 group relative ${
-          selected ? 'ring-2 ring-primary shadow-md' : ''
+        className={`card-hover-lift cursor-pointer group relative overflow-hidden rounded-xl ${
+          selected ? 'ring-2 ring-primary shadow-md' : 'border-border'
         }`}
         onClick={onClick}
       >
@@ -158,16 +221,22 @@ function EnhancedDocumentCard({
         </div>
 
         <CardContent className="p-4">
-          {/* Thumbnail preview area */}
+          {/* Thumbnail preview area with gradient overlay */}
           <div className="bg-muted/30 rounded-lg border border-border h-28 flex items-center justify-center mb-3 relative overflow-hidden">
             <FileText className="h-10 w-10 text-muted-foreground/20" />
-            {/* Category badge */}
+            {/* Gradient overlay at bottom */}
+            <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card/80 to-transparent" />
+            {/* Category badge with icon */}
             <Badge
-              className="absolute top-2 right-2 text-[9px] capitalize bg-primary/10 text-primary border-0"
-              variant="outline"
+              className={`absolute top-2 right-2 text-[9px] capitalize border-0 flex items-center gap-1 ${catIcon.color}`}
             >
+              {catIcon.icon}
               {category}
             </Badge>
+            {/* New badge */}
+            <div className="absolute top-2 left-2">
+              <NewBadge createdAt={document.createdAt} />
+            </div>
             {/* File type indicator */}
             <div className="absolute bottom-1 right-2 text-[9px] text-muted-foreground font-mono">
               {document.fileType?.split('/').pop()?.toUpperCase() || 'PDF'}
@@ -222,15 +291,19 @@ function EnhancedDocumentTableRow({
   onClick,
   selected,
   onToggleSelect,
+  index,
 }: {
   document: Document;
   onClick: () => void;
   selected: boolean;
   onToggleSelect: () => void;
+  index: number;
 }) {
   const category = document.tags?.[0] || document.folder || 'Document';
   const signedCount = document.signatures.filter(s => s.signedAt).length;
   const totalSigners = document.recipients.length || document.signatures.length;
+  const catIcon = getCategoryIcon(category);
+  const isEven = index % 2 === 0;
 
   return (
     <motion.tr
@@ -238,9 +311,9 @@ function EnhancedDocumentTableRow({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className={`cursor-pointer hover:bg-accent/50 border-b border-border ${
-        selected ? 'bg-primary/5' : ''
-      }`}
+      className={`cursor-pointer hover:bg-accent/50 border-b border-border transition-colors ${
+        isEven ? 'bg-muted/20' : ''
+      } ${selected ? 'bg-primary/5' : ''}`}
       onClick={onClick}
     >
       <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
@@ -248,11 +321,14 @@ function EnhancedDocumentTableRow({
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-primary/10 p-1.5 shrink-0">
-            <FileText className="h-4 w-4 text-primary" />
+          <div className={`rounded-lg p-1.5 shrink-0 flex items-center justify-center ${catIcon.color}`}>
+            {catIcon.icon}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium truncate max-w-[280px]">{document.title}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium truncate max-w-[280px]">{document.title}</p>
+              <NewBadge createdAt={document.createdAt} />
+            </div>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-xs text-muted-foreground">{document.fileName}</span>
               <Badge variant="outline" className="text-[9px] h-4 capitalize px-1.5 py-0">
@@ -281,7 +357,7 @@ function EnhancedDocumentTableRow({
       <TableCell>
         {totalSigners > 0 ? (
           <div className="flex items-center gap-2 min-w-[100px]">
-            <Progress value={(signedCount / totalSigners) * 100} className="h-1.5 flex-1" />
+            <CircularProgress value={(signedCount / totalSigners) * 100} size={22} />
             <span className="text-xs text-muted-foreground">{signedCount}/{totalSigners}</span>
           </div>
         ) : (
@@ -294,7 +370,7 @@ function EnhancedDocumentTableRow({
       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="h-8 w-8 btn-click-scale">
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -450,6 +526,8 @@ export function DocumentsPage() {
     setSelectedDocs(new Set());
   };
 
+  const noDocsAtAll = !isLoading && filteredDocuments.length === 0 && !hasActiveFilters;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -461,7 +539,9 @@ export function DocumentsPage() {
             {hasActiveFilters && ' (filtered)'}
           </p>
         </div>
-        <DocumentUploadDialog />
+        <div className={noDocsAtAll ? 'animate-pulse' : ''}>
+          <DocumentUploadDialog />
+        </div>
       </div>
 
       {/* Search bar & quick filters */}
@@ -495,6 +575,7 @@ export function DocumentsPage() {
             variant={hasActiveFilters ? 'secondary' : 'outline'}
             size="default"
             onClick={() => setFilterPanelOpen(!filterPanelOpen)}
+            className="btn-click-scale"
           >
             <SlidersHorizontal className="mr-2 h-4 w-4" />
             Filters
@@ -510,7 +591,7 @@ export function DocumentsPage() {
             <Button
               variant={view === 'grid' ? 'secondary' : 'ghost'}
               size="icon"
-              className="h-9 w-9 rounded-r-none"
+              className="h-9 w-9 rounded-r-none btn-click-scale"
               onClick={() => setView('grid')}
             >
               <LayoutGrid className="h-4 w-4" />
@@ -518,7 +599,7 @@ export function DocumentsPage() {
             <Button
               variant={view === 'list' ? 'secondary' : 'ghost'}
               size="icon"
-              className="h-9 w-9 rounded-l-none"
+              className="h-9 w-9 rounded-l-none btn-click-scale"
               onClick={() => setView('list')}
             >
               <List className="h-4 w-4" />
@@ -616,7 +697,7 @@ export function DocumentsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full"
+                        className="w-full btn-click-scale"
                         onClick={clearAllFilters}
                         disabled={!hasActiveFilters}
                       >
@@ -640,7 +721,7 @@ export function DocumentsPage() {
             <Badge
               key={status}
               variant="secondary"
-              className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors capitalize"
+              className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors capitalize btn-click-scale"
               onClick={() => toggleStatusFilter(status)}
             >
               {status} ×
@@ -650,7 +731,7 @@ export function DocumentsPage() {
             <Badge
               key={priority}
               variant="secondary"
-              className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors capitalize"
+              className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors capitalize btn-click-scale"
               onClick={() => togglePriorityFilter(priority)}
             >
               {priority} ×
@@ -659,7 +740,7 @@ export function DocumentsPage() {
           {categoryFilter && (
             <Badge
               variant="secondary"
-              className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors capitalize"
+              className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors capitalize btn-click-scale"
               onClick={() => setCategoryFilter('')}
             >
               {categoryFilter} ×
@@ -681,13 +762,13 @@ export function DocumentsPage() {
               <CheckSquare className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium">{selectedDocs.size} selected</span>
               <Separator orientation="vertical" className="h-5" />
-              <Button size="sm" variant="outline" onClick={handleBulkArchive}>
+              <Button size="sm" variant="outline" onClick={handleBulkArchive} className="btn-click-scale">
                 <Archive className="mr-1.5 h-3.5 w-3.5" />Archive
               </Button>
-              <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={handleBulkDelete}>
+              <Button size="sm" variant="outline" className="text-destructive hover:text-destructive btn-click-scale" onClick={handleBulkDelete}>
                 <Trash2 className="mr-1.5 h-3.5 w-3.5" />Delete
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setSelectedDocs(new Set())}>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedDocs(new Set())} className="btn-click-scale">
                 <XSquare className="mr-1.5 h-3.5 w-3.5" />Deselect All
               </Button>
             </div>
@@ -713,15 +794,19 @@ export function DocumentsPage() {
           ))}
         </div>
       ) : filteredDocuments.length === 0 ? (
-        /* Empty state */
+        /* Empty state with illustration */
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center py-20"
         >
-          <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-            <Inbox className="h-8 w-8 text-muted-foreground/50" />
-          </div>
+          <motion.div
+            className="mx-auto w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4"
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <Inbox className="h-10 w-10 text-muted-foreground/30" />
+          </motion.div>
           <h3 className="text-lg font-medium mb-1">No documents found</h3>
           <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-6">
             {hasActiveFilters
@@ -730,13 +815,13 @@ export function DocumentsPage() {
           </p>
           <div className="flex gap-3 justify-center">
             {hasActiveFilters ? (
-              <Button variant="outline" onClick={clearAllFilters}>
+              <Button variant="outline" onClick={clearAllFilters} className="btn-click-scale">
                 Clear Filters
               </Button>
             ) : (
               <>
                 <DocumentUploadDialog />
-                <Button variant="outline" onClick={() => navigate('templates')}>
+                <Button variant="outline" onClick={() => navigate('templates')} className="btn-click-scale">
                   <FileSignature className="mr-2 h-4 w-4" />
                   Use Template
                 </Button>
@@ -748,7 +833,7 @@ export function DocumentsPage() {
         /* Grid view */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <AnimatePresence mode="popLayout">
-            {filteredDocuments.map((doc) => (
+            {filteredDocuments.map((doc, i) => (
               <EnhancedDocumentCard
                 key={doc.id}
                 document={doc}
@@ -761,7 +846,7 @@ export function DocumentsPage() {
         </div>
       ) : (
         /* List view */
-        <Card>
+        <Card className="overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -782,13 +867,14 @@ export function DocumentsPage() {
             </TableHeader>
             <TableBody>
               <AnimatePresence mode="popLayout">
-                {filteredDocuments.map((doc) => (
+                {filteredDocuments.map((doc, i) => (
                   <EnhancedDocumentTableRow
                     key={doc.id}
                     document={doc}
                     onClick={() => navigate('document-detail', { id: doc.id })}
                     selected={selectedDocs.has(doc.id)}
                     onToggleSelect={() => toggleSelectDoc(doc.id)}
+                    index={i}
                   />
                 ))}
               </AnimatePresence>
