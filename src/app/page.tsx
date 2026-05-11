@@ -1,37 +1,40 @@
 'use client';
 
 import { useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useAppStore } from '@/lib/store';
 import { ThemeProvider } from 'next-themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppLayout } from '@/components/AppLayout';
 import { PageTransition } from '@/components/PageTransition';
 import { LoginPage } from '@/components/LoginPage';
-import { DashboardPage } from '@/components/DashboardPage';
-import { InboxPage } from '@/components/InboxPage';
-import { DocumentsPage } from '@/components/DocumentsPage';
-import { DocumentDetailPage } from '@/components/DocumentDetailPage';
-import { DocumentEditorPage } from '@/components/DocumentEditorPage';
-import { TemplatesPage } from '@/components/TemplatesPage';
-import { AuditLogsPage } from '@/components/AuditLogsPage';
-import { AdminPage } from '@/components/AdminPage';
-import { SettingsPage } from '@/components/SettingsPage';
-import { WorkflowBuilderPage } from '@/components/WorkflowBuilderPage';
-import { AIAssistant } from '@/components/AIAssistant';
-import { ContactsPage } from '@/components/ContactsPage';
-import { ReportsPage } from '@/components/ReportsPage';
-import { NotificationCenterPage } from '@/components/NotificationCenterPage';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { KeyboardShortcutsDialog } from '@/components/KeyboardShortcutsDialog';
-import { OnboardingTour } from '@/components/OnboardingTour';
-import { CalendarPage } from '@/components/CalendarPage';
-import { ApprovalChainsPage } from '@/components/ApprovalChainsPage';
-import { ArchivePage } from '@/components/ArchivePage';
-import { CertificatePage } from '@/components/CertificatePage';
-import { TeamLeaderboardPage } from '@/components/TeamLeaderboardPage';
-import { DocumentExpiryPage } from '@/components/DocumentExpiryPage';
-import { DocumentAnnotationsPage } from '@/components/DocumentAnnotationsPage';
-import { DocumentComparisonPage } from '@/components/DocumentComparisonPage';
+
+// Dynamic imports to reduce initial compilation memory - each page loads on demand
+const DashboardPage = dynamic(() => import('@/components/DashboardPage').then(m => ({ default: m.DashboardPage })), { ssr: false });
+const InboxPage = dynamic(() => import('@/components/InboxPage').then(m => ({ default: m.InboxPage })), { ssr: false });
+const DocumentsPage = dynamic(() => import('@/components/DocumentsPage').then(m => ({ default: m.DocumentsPage })), { ssr: false });
+const DocumentDetailPage = dynamic(() => import('@/components/DocumentDetailPage').then(m => ({ default: m.DocumentDetailPage })), { ssr: false });
+const DocumentEditorPage = dynamic(() => import('@/components/DocumentEditorPage').then(m => ({ default: m.DocumentEditorPage })), { ssr: false });
+const TemplatesPage = dynamic(() => import('@/components/TemplatesPage').then(m => ({ default: m.TemplatesPage })), { ssr: false });
+const AuditLogsPage = dynamic(() => import('@/components/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })), { ssr: false });
+const AdminPage = dynamic(() => import('@/components/AdminPage').then(m => ({ default: m.AdminPage })), { ssr: false });
+const SettingsPage = dynamic(() => import('@/components/SettingsPage').then(m => ({ default: m.SettingsPage })), { ssr: false });
+const WorkflowBuilderPage = dynamic(() => import('@/components/WorkflowBuilderPage').then(m => ({ default: m.WorkflowBuilderPage })), { ssr: false });
+const AIAssistant = dynamic(() => import('@/components/AIAssistant').then(m => ({ default: m.AIAssistant })), { ssr: false });
+const ContactsPage = dynamic(() => import('@/components/ContactsPage').then(m => ({ default: m.ContactsPage })), { ssr: false });
+const ReportsPage = dynamic(() => import('@/components/ReportsPage').then(m => ({ default: m.ReportsPage })), { ssr: false });
+const NotificationCenterPage = dynamic(() => import('@/components/NotificationCenterPage').then(m => ({ default: m.NotificationCenterPage })), { ssr: false });
+const OnboardingTour = dynamic(() => import('@/components/OnboardingTour').then(m => ({ default: m.OnboardingTour })), { ssr: false });
+const CalendarPage = dynamic(() => import('@/components/CalendarPage').then(m => ({ default: m.CalendarPage })), { ssr: false });
+const ApprovalChainsPage = dynamic(() => import('@/components/ApprovalChainsPage').then(m => ({ default: m.ApprovalChainsPage })), { ssr: false });
+const ArchivePage = dynamic(() => import('@/components/ArchivePage').then(m => ({ default: m.ArchivePage })), { ssr: false });
+const CertificatePage = dynamic(() => import('@/components/CertificatePage').then(m => ({ default: m.CertificatePage })), { ssr: false });
+const TeamLeaderboardPage = dynamic(() => import('@/components/TeamLeaderboardPage').then(m => ({ default: m.TeamLeaderboardPage })), { ssr: false });
+const DocumentExpiryPage = dynamic(() => import('@/components/DocumentExpiryPage').then(m => ({ default: m.DocumentExpiryPage })), { ssr: false });
+const DocumentAnnotationsPage = dynamic(() => import('@/components/DocumentAnnotationsPage').then(m => ({ default: m.DocumentAnnotationsPage })), { ssr: false });
+const DocumentComparisonPage = dynamic(() => import('@/components/DocumentComparisonPage').then(m => ({ default: m.DocumentComparisonPage })), { ssr: false });
 
 const queryClient = new QueryClient({
   defaultOptions: {
