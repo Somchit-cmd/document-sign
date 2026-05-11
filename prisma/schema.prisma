@@ -1,0 +1,409 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============ USERS & AUTH ============
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  avatarUrl     String?
+  role          String    @default("employee")
+  departmentId  String?
+  jobTitle      String?
+  phone         String?
+  isActive      Boolean   @default(true)
+  mfaEnabled    Boolean   @default(false)
+  mfaSecret     String?
+  lastLoginAt   DateTime?
+  lastLoginIp   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  department         Department?         @relation("DepartmentMembers", fields: [departmentId], references: [id])
+  managedDepartment  Department?         @relation("DepartmentManager")
+  documents          Document[]          @relation("UserDocuments")
+  signatures         Signature[]         @relation("UserSignatures")
+  approvals          ApprovalStep[]      @relation("UserApprovals")
+  auditLogs          AuditLog[]          @relation("UserAuditLogs")
+  notifications      Notification[]      @relation("UserNotifications")
+  comments           Comment[]           @relation("UserComments")
+  templates          Template[]          @relation("UserTemplates")
+  sessions           Session[]           @relation("UserSessions")
+  apiKeys            ApiKey[]            @relation("UserApiKeys")
+  documentActivities DocumentActivity[]  @relation("UserActivities")
+  documentFields     DocumentField[]     @relation("UserFieldAssignments")
+
+  @@index([email])
+  @@index([role])
+  @@index([departmentId])
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  userId     String
+  token      String   @unique
+  device     String?
+  browser    String?
+  ipAddress  String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  user       User     @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  keyHash     String    @unique
+  permissions String    @default("read")
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+
+  user        User      @relation("UserApiKeys", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([keyHash])
+  @@index([userId])
+}
+
+// ============ ORGANIZATION ============
+
+model Department {
+  id          String    @id @default(cuid())
+  name        String
+  code        String    @unique
+  description String?
+  parentId    String?
+  managerId   String?  @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  parent      Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children    Department[] @relation("DepartmentHierarchy")
+  members     User[]       @relation("DepartmentMembers")
+  manager     User?        @relation("DepartmentManager", fields: [managerId], references: [id])
+
+  @@index([parentId])
+  @@index([code])
+}
+
+// ============ DOCUMENTS ============
+
+model Document {
+  id             String    @id @default(cuid())
+  title          String
+  description    String?
+  fileName       String
+  filePath       String
+  fileSize       Int
+  fileType       String
+  mimeType       String
+  category       String?
+  tags           String?
+  version        Int       @default(1)
+  parentId       String?
+  status         String    @default("draft")
+  priority       String    @default("normal")
+  isEncrypted    Boolean   @default(false)
+  isTemplate     Boolean   @default(false)
+  ocrText        String?
+  thumbnailPath  String?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  creatorId      String
+  creator        User       @relation("UserDocuments", fields: [creatorId], references: [id])
+
+  parent         Document?   @relation("DocumentVersions", fields: [parentId], references: [id])
+  versions       Document[]  @relation("DocumentVersions")
+
+  folderId       String?
+  folder         Folder?     @relation(fields: [folderId], references: [id])
+
+  signatures     Signature[]
+  workflow       Workflow?
+  comments       Comment[]
+  sharedWith     DocumentShare[]
+  activities     DocumentActivity[]
+  fields         DocumentField[]
+
+  @@index([creatorId])
+  @@index([status])
+  @@index([folderId])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model Folder {
+  id          String    @id @default(cuid())
+  name        String
+  parentId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  parent      Folder?   @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children    Folder[]  @relation("FolderHierarchy")
+  documents   Document[]
+
+  @@index([parentId])
+}
+
+model DocumentShare {
+  id         String   @id @default(cuid())
+  documentId String
+  userId     String?
+  email      String?
+  permission String   @default("view")
+  createdAt  DateTime @default(now())
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([userId])
+}
+
+model DocumentField {
+  id         String   @id @default(cuid())
+  documentId String
+  type       String
+  label      String?
+  required   Boolean  @default(true)
+  page       Int      @default(1)
+  x          Float
+  y          Float
+  width      Float
+  height     Float
+  value      String?
+  options    String?
+  assigneeId String?
+  fontSize   Int?
+  fontFamily String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  assignee   User?    @relation("UserFieldAssignments", fields: [assigneeId], references: [id])
+
+  @@index([documentId])
+  @@index([assigneeId])
+}
+
+model DocumentActivity {
+  id         String   @id @default(cuid())
+  documentId String
+  userId     String?
+  action     String
+  details    String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User?    @relation("UserActivities", fields: [userId], references: [id])
+
+  @@index([documentId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ============ SIGNATURES ============
+
+model Signature {
+  id            String    @id @default(cuid())
+  documentId    String
+  signerId      String
+  type          String    @default("electronic")
+  status        String    @default("pending")
+  signatureData String?
+  ipAddress     String?
+  userAgent     String?
+  signedAt      DateTime?
+  reason        String?
+  fieldId       String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  document      Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  signer        User      @relation("UserSignatures", fields: [signerId], references: [id])
+
+  @@index([documentId])
+  @@index([signerId])
+  @@index([status])
+}
+
+// ============ WORKFLOWS ============
+
+model Workflow {
+  id          String    @id @default(cuid())
+  documentId  String    @unique
+  name        String
+  type        String    @default("sequential")
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  document    Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  steps       ApprovalStep[]
+
+  @@index([documentId])
+  @@index([status])
+}
+
+model ApprovalStep {
+  id          String    @id @default(cuid())
+  workflowId  String
+  stepOrder   Int
+  stepType    String    @default("approval")
+  approverId  String
+  status      String    @default("pending")
+  delegatedTo String?
+  comments    String?
+  actionDate  DateTime?
+  dueDate     DateTime?
+  remindedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workflow    Workflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  approver    User      @relation("UserApprovals", fields: [approverId], references: [id])
+
+  @@index([workflowId])
+  @@index([approverId])
+  @@index([status])
+}
+
+model WorkflowTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String   @default("sequential")
+  category    String?
+  steps       String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+}
+
+// ============ TEMPLATES ============
+
+model Template {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  category      String?
+  tags          String?
+  filePath      String
+  fileName      String
+  fileType      String
+  variables     String?
+  fields        String?
+  thumbnailPath String?
+  isPublic      Boolean  @default(false)
+  usageCount    Int      @default(0)
+  version       Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  creatorId     String
+  creator       User     @relation("UserTemplates", fields: [creatorId], references: [id])
+
+  @@index([creatorId])
+  @@index([category])
+  @@index([createdAt])
+}
+
+// ============ AUDIT LOGS ============
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  resource   String?
+  resourceId String?
+  details    String?
+  ipAddress  String?
+  userAgent  String?
+  location   String?
+  severity   String   @default("info")
+  createdAt  DateTime @default(now())
+
+  user       User?    @relation("UserAuditLogs", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+  @@index([severity])
+}
+
+// ============ NOTIFICATIONS ============
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ============ COMMENTS ============
+
+model Comment {
+  id         String    @id @default(cuid())
+  documentId String
+  userId     String
+  parentId   String?
+  content    String
+  type       String    @default("comment")
+  resolved   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  document   Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User      @relation("UserComments", fields: [userId], references: [id])
+  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies    Comment[] @relation("CommentReplies")
+
+  @@index([documentId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+// ============ SYSTEM CONFIG ============
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
