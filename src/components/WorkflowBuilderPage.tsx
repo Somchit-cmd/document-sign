@@ -119,6 +119,15 @@ const STEP_PALETTE: StepPaletteItem[] = [
   },
 ];
 
+// Gradient backgrounds for step type icons
+const STEP_GRADIENTS: Record<StepType, string> = {
+  approval: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+  signature: 'bg-gradient-to-br from-teal-500 to-cyan-600',
+  review: 'bg-gradient-to-br from-cyan-500 to-teal-600',
+  notification: 'bg-gradient-to-br from-amber-500 to-orange-600',
+  condition: 'bg-gradient-to-br from-purple-500 to-violet-600',
+};
+
 function getStepConfig(type: StepType): StepPaletteItem {
   return STEP_PALETTE.find((s) => s.type === type) || STEP_PALETTE[0];
 }
@@ -226,7 +235,10 @@ function ConnectionLine({ animated = false }: { animated?: boolean }) {
         initial={{ scaleY: 0 }}
         animate={{ scaleY: 1 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="w-0.5 h-6 bg-emerald-300 dark:bg-emerald-700 origin-top"
+        className={cn(
+          'w-0.5 h-6 origin-top',
+          animated ? 'gradient-flow-line' : 'bg-emerald-300 dark:bg-emerald-700'
+        )}
       />
       <motion.div
         initial={{ opacity: 0, scale: 0 }}
@@ -305,7 +317,7 @@ function WorkflowStepCard({
       className={cn(
         'relative rounded-xl border-2 p-3 cursor-pointer transition-all duration-200 group',
         isSelected
-          ? 'border-emerald-400 dark:border-emerald-500 shadow-lg shadow-emerald-100 dark:shadow-emerald-950/30 ring-2 ring-emerald-200 dark:ring-emerald-800'
+          ? 'border-emerald-400 dark:border-emerald-500 shadow-lg shadow-emerald-100 dark:shadow-emerald-950/30 ring-2 ring-emerald-200 dark:ring-emerald-800 animate-step-pulse'
           : 'border-border hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-md',
         step.status === 'complete' && 'opacity-70'
       )}
@@ -355,15 +367,14 @@ function WorkflowStepCard({
           </motion.button>
         </div>
 
-        {/* Icon */}
+        {/* Icon with gradient background */}
         <div
           className={cn(
-            'p-2 rounded-lg shrink-0',
-            config.bgColor,
-            config.borderColor
+            'p-2 rounded-lg shrink-0 text-white',
+            STEP_GRADIENTS[step.type]
           )}
         >
-          <Icon className={cn('h-4 w-4', config.color)} />
+          <Icon className="h-4 w-4" />
         </div>
 
         {/* Info */}
@@ -763,6 +774,7 @@ export function WorkflowBuilderPage() {
   const [saving, setSaving] = useState(false);
   const [testRunning, setTestRunning] = useState(false);
   const [addMenuIndex, setAddMenuIndex] = useState<number | null>(null);
+  const [showMinimap, setShowMinimap] = useState(true);
 
   // Fetch users and departments
   useEffect(() => {
@@ -929,7 +941,7 @@ export function WorkflowBuilderPage() {
       </div>
 
       {/* Body */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Left Panel - Step Palette */}
         <div className="w-64 border-r border-border bg-muted/30 shrink-0">
           <ScrollArea className="h-full">
@@ -1092,6 +1104,46 @@ export function WorkflowBuilderPage() {
           </ScrollArea>
         </div>
       </div>
+
+      {/* Mini-map / Overview */}
+      {showMinimap && steps.length > 0 && (
+        <div className="absolute bottom-4 right-80 z-10 minimap-container p-2" style={{ width: 120 }}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[8px] text-muted-foreground font-medium uppercase tracking-wider">Overview</span>
+            <button
+              onClick={() => setShowMinimap(false)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span className="text-[10px]">×</span>
+            </button>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-center">
+              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+            </div>
+            <div className="w-0.5 h-1 bg-emerald-300 dark:bg-emerald-700 mx-auto" />
+            {steps.map((step, i) => {
+              const config = getStepConfig(step.type);
+              return (
+                <div key={step.id} className="flex flex-col items-center">
+                  <div
+                    className={cn(
+                      'h-3 w-16 rounded-sm border',
+                      selectedStepId === step.id ? 'border-emerald-400 bg-emerald-100 dark:bg-emerald-900/50' : 'border-border bg-muted/50',
+                      step.status === 'complete' && 'opacity-50'
+                    )}
+                  />
+                  {i < steps.length - 1 && <div className="w-0.5 h-1 bg-emerald-300 dark:bg-emerald-700" />}
+                </div>
+              );
+            })}
+            <div className="w-0.5 h-1 bg-emerald-300 dark:bg-emerald-700 mx-auto" />
+            <div className="flex justify-center">
+              <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast container */}
       <ToastContainer />

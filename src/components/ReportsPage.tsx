@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,6 +67,10 @@ import {
   Send,
   XCircle,
   RotateCcw,
+  ChevronDown,
+  Printer,
+  FileSpreadsheet,
+  FileType,
 } from 'lucide-react';
 import { format, subDays, formatDistanceToNow } from 'date-fns';
 
@@ -240,6 +244,7 @@ function CircularProgress({ value, size = 100, strokeWidth = 8 }: {
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
           transition={{ duration: 1.5, ease: 'easeOut', delay: 0.5 }}
+          style={{ filter: 'drop-shadow(0 0 6px rgba(16, 185, 129, 0.4))' }}
         />
         <defs>
           <linearGradient id="circularGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -251,7 +256,7 @@ function CircularProgress({ value, size = 100, strokeWidth = 8 }: {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <motion.span
-          className="text-xl font-bold"
+          className="text-xl font-bold gradient-text-animated"
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.8, duration: 0.4 }}
@@ -318,6 +323,7 @@ export function ReportsPage() {
   const { navigate } = useAppStore();
   const [dateRange, setDateRange] = useState('30');
   const [activeTab, setActiveTab] = useState('overview');
+  const [exportOpen, setExportOpen] = useState(false);
 
   // Key metrics
   const metrics = useMemo(() => ({
@@ -359,7 +365,7 @@ export function ReportsPage() {
         </div>
         <div className="flex items-center gap-3">
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[180px]">
               <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
@@ -368,12 +374,48 @@ export function ReportsPage() {
               <SelectItem value="14">Last 14 days</SelectItem>
               <SelectItem value="30">Last 30 days</SelectItem>
               <SelectItem value="90">Last 90 days</SelectItem>
+              <SelectItem value="quarter">This Quarter</SelectItem>
+              <SelectItem value="year">This Year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" className="btn-click-scale">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
+          {/* Export dropdown */}
+          <div className="relative">
+            <Button variant="outline" size="sm" className="btn-click-scale" onClick={() => setExportOpen(!exportOpen)}>
+              <Download className="mr-2 h-4 w-4" />
+              Export
+              <ChevronDown className="ml-1 h-3 w-3" />
+            </Button>
+            <AnimatePresence>
+              {exportOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-1 z-50 min-w-[160px] rounded-lg border border-border bg-card shadow-lg overflow-hidden"
+                >
+                  {[
+                    { icon: FileType, label: 'PDF Report', desc: 'Formatted report' },
+                    { icon: FileSpreadsheet, label: 'CSV', desc: 'Raw data export' },
+                    { icon: FileText, label: 'Excel', desc: 'Spreadsheet format' },
+                    { icon: Printer, label: 'Print', desc: 'Print preview' },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-accent/50 transition-colors text-left"
+                      onClick={() => setExportOpen(false)}
+                    >
+                      <item.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="font-medium">{item.label}</p>
+                        <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                      </div>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </motion.div>
 

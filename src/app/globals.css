@@ -613,3 +613,231 @@
 .animate-breathe {
   animation: breathe 6s ease-in-out infinite;
 }
+
+/* =============================================
+   Task 7-c: New Enhanced CSS Utilities
+   ============================================= */
+
+/* Material Design ripple effect */
+.animate-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.animate-ripple::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease, opacity 0.6s ease;
+  opacity: 0;
+}
+.animate-ripple:active::after {
+  width: 300px;
+  height: 300px;
+  opacity: 1;
+  transition: 0s;
+}
+
+/* Animated gradient text that shifts colors */
+@keyframes gradient-text-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-text-animated {
+  background: linear-gradient(135deg, #10b981, #14b8a6, #06b6d4, #10b981);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-text-shift 4s ease infinite;
+}
+
+/* Enhanced card-hover-lift with premium shadow (override existing basic one) */
+.card-hover-lift {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 40px -8px rgb(0 0 0 / 0.12),
+    0 4px 12px -2px rgb(0 0 0 / 0.06),
+    0 0 0 1px rgb(16 185 129 / 0.08);
+}
+.dark .card-hover-lift:hover {
+  box-shadow:
+    0 12px 40px -8px rgb(0 0 0 / 0.4),
+    0 4px 12px -2px rgb(0 0 0 / 0.2),
+    0 0 0 1px rgb(16 185 129 / 0.12);
+}
+
+/* Enhanced skeleton shimmer loading */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    var(--muted) / 0.4 37%,
+    var(--muted) 63%,
+    var(--muted) / 0.4 75%,
+    var(--muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+  border-radius: var(--radius);
+}
+
+/* Badge with subtle glow effect */
+.badge-glow {
+  box-shadow: 0 0 8px 2px var(--primary) / 0.15;
+  transition: box-shadow 0.3s ease;
+}
+.badge-glow:hover {
+  box-shadow: 0 0 12px 4px var(--primary) / 0.25;
+}
+.dark .badge-glow {
+  box-shadow: 0 0 8px 2px var(--primary) / 0.25;
+}
+.dark .badge-glow:hover {
+  box-shadow: 0 0 12px 4px var(--primary) / 0.35;
+}
+
+/* Input with animated glow on focus */
+@keyframes input-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgb(16 185 129 / 0.1); }
+  50% { box-shadow: 0 0 0 5px rgb(16 185 129 / 0.15); }
+}
+
+.input-glow-focus {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.input-glow-focus:focus {
+  border-color: rgb(16 185 129 / 0.5);
+  animation: input-glow-pulse 2s ease-in-out infinite;
+}
+.dark .input-glow-focus:focus {
+  border-color: rgb(52 211 153 / 0.4);
+  box-shadow: 0 0 0 3px rgb(52 211 153 / 0.1);
+}
+
+/* Animated scroll down indicator */
+@keyframes scroll-indicator-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50% { transform: translateY(8px); opacity: 1; }
+}
+
+.scroll-indicator {
+  animation: scroll-indicator-bounce 1.5s ease-in-out infinite;
+}
+
+/* Gradient flow animation along connection lines */
+@keyframes gradient-flow {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 0% 200%; }
+}
+
+.gradient-flow-line {
+  background: linear-gradient(
+    180deg,
+    transparent,
+    #10b981,
+    #14b8a6,
+    #06b6d4,
+    transparent
+  );
+  background-size: 100% 200%;
+  animation: gradient-flow 2s linear infinite;
+}
+
+/* Pulse animation for active/current step */
+@keyframes step-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(16 185 129 / 0.4); }
+  50% { box-shadow: 0 0 0 8px rgb(16 185 129 / 0); }
+}
+
+.animate-step-pulse {
+  animation: step-pulse 2s ease-in-out infinite;
+}
+
+/* Constellation line between icons */
+@keyframes constellation-twinkle {
+  0%, 100% { opacity: 0.08; }
+  50% { opacity: 0.2; }
+}
+
+.constellation-line {
+  stroke-dasharray: 4 4;
+  animation: constellation-twinkle 3s ease-in-out infinite;
+}
+
+/* Shimmer sweep across login card */
+@keyframes card-shimmer-sweep {
+  0% { transform: translateX(-100%) rotate(12deg); }
+  100% { transform: translateX(200%) rotate(12deg); }
+}
+
+.card-shimmer-sweep::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgb(255 255 255 / 0.08) 45%,
+    rgb(255 255 255 / 0.15) 50%,
+    rgb(255 255 255 / 0.08) 55%,
+    transparent 60%
+  );
+  animation: card-shimmer-sweep 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.dark .card-shimmer-sweep::before {
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgb(255 255 255 / 0.03) 45%,
+    rgb(255 255 255 / 0.06) 50%,
+    rgb(255 255 255 / 0.03) 55%,
+    transparent 60%
+  );
+}
+
+/* Glassmorphism frosted glass panel */
+.glass-panel {
+  background: rgb(255 255 255 / 0.12);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgb(255 255 255 / 0.15);
+}
+
+.dark .glass-panel {
+  background: rgb(255 255 255 / 0.04);
+  border: 1px solid rgb(255 255 255 / 0.06);
+}
+
+/* Mini-map container styling */
+.minimap-container {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.08);
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+.minimap-container:hover {
+  opacity: 1;
+}
+.dark .minimap-container {
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.3);
+}

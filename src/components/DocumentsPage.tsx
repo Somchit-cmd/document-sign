@@ -34,6 +34,23 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import {
   LayoutGrid,
@@ -53,8 +70,10 @@ import {
   CheckSquare,
   XSquare,
   ChevronDown,
+  ChevronRight,
   FileSignature,
   FolderOpen,
+  Folder,
   Calendar,
   Tag,
   X,
@@ -64,6 +83,14 @@ import {
   ClipboardList,
   Scale,
   Sparkles,
+  Plus,
+  FolderPlus,
+  ChevronLeft,
+  Users,
+  FileArchive,
+  LayoutTemplate,
+  FolderClosed,
+  Menu,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -191,7 +218,6 @@ function EnhancedDocumentCard({
   selected: boolean;
   onToggleSelect: () => void;
 }) {
-  const signedCount = document.signatures.filter(s => s.signedAt).length;
   const totalSigners = document.recipients.length || document.signatures.length;
   const category = document.tags?.[0] || document.folder || 'Document';
   const catIcon = getCategoryIcon(category);
@@ -406,6 +432,300 @@ function EnhancedDocumentTableRow({
   );
 }
 
+// ============================================================
+// Folder Types & Data
+// ============================================================
+
+interface FolderItem {
+  id: string;
+  name: string;
+  icon: React.ElementType;
+  count?: number;
+  children?: FolderItem[];
+  isRoot?: boolean;
+}
+
+const folderTree: FolderItem[] = [
+  {
+    id: 'all',
+    name: 'All Documents',
+    icon: FolderOpen,
+    count: 47,
+    isRoot: true,
+  },
+  {
+    id: 'my',
+    name: 'My Documents',
+    icon: FileText,
+    count: 23,
+    isRoot: true,
+  },
+  {
+    id: 'shared',
+    name: 'Shared With Me',
+    icon: Users,
+    count: 12,
+    isRoot: true,
+  },
+  {
+    id: 'templates',
+    name: 'Templates',
+    icon: LayoutTemplate,
+    count: 8,
+    isRoot: true,
+  },
+  {
+    id: 'archive',
+    name: 'Archive',
+    icon: FileArchive,
+    count: 5,
+    isRoot: true,
+  },
+  {
+    id: 'categories',
+    name: 'Categories',
+    icon: Folder,
+    isRoot: false,
+    children: [
+      { id: 'cat-contracts', name: 'Contracts', icon: FileText, count: 14 },
+      { id: 'cat-agreements', name: 'Agreements', icon: Handshake, count: 9 },
+      { id: 'cat-ndas', name: 'NDAs', icon: Scale, count: 7 },
+      { id: 'cat-proposals', name: 'Proposals', icon: Sparkles, count: 5 },
+      { id: 'cat-invoices', name: 'Invoices', icon: Receipt, count: 8 },
+      { id: 'cat-hr', name: 'HR', icon: User, count: 6 },
+      { id: 'cat-legal', name: 'Legal', icon: ClipboardList, count: 4 },
+    ],
+  },
+];
+
+// Custom folders that users create (stored in state)
+const initialCustomFolders: FolderItem[] = [];
+
+// ============================================================
+// Folder Sidebar Component
+// ============================================================
+
+function FolderSidebar({
+  activeFolder,
+  onFolderSelect,
+  customFolders,
+  onCreateFolder,
+}: {
+  activeFolder: string;
+  onFolderSelect: (id: string) => void;
+  customFolders: FolderItem[];
+  onCreateFolder: (name: string) => void;
+}) {
+  const [categoriesOpen, setCategoriesOpen] = useState(true);
+  const [customOpen, setCustomOpen] = useState(true);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+
+  const handleCreateFolder = () => {
+    if (newFolderName.trim()) {
+      onCreateFolder(newFolderName.trim());
+      setNewFolderName('');
+      setCreateDialogOpen(false);
+      toast.success(`Folder "${newFolderName.trim()}" created`);
+    }
+  };
+
+  const allFolders = [...folderTree];
+  if (customFolders.length > 0) {
+    allFolders.push({
+      id: 'custom',
+      name: 'Custom Folders',
+      icon: FolderPlus,
+      isRoot: false,
+      children: customFolders,
+    });
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Create Folder Button */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm" className="w-full mb-3 btn-click-scale gap-2">
+            <FolderPlus className="h-4 w-4" />
+            New Folder
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Create New Folder</DialogTitle>
+            <DialogDescription>
+              Enter a name for your new document folder.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="Folder name"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateFolder} disabled={!newFolderName.trim()} className="bg-primary hover:bg-primary/90">
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Separator className="mb-2" />
+
+      {/* Folder Tree */}
+      <ScrollArea className="flex-1 -mx-2 px-2">
+        <div className="space-y-0.5">
+          {allFolders.map((folder) => {
+            // Root folders (no children)
+            if (!folder.children) {
+              const Icon = folder.icon;
+              const isActive = activeFolder === folder.id;
+              return (
+                <motion.button
+                  key={folder.id}
+                  whileHover={{ x: 2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onFolderSelect(folder.id)}
+                  className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-left transition-all text-sm group ${
+                    isActive
+                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 font-medium shadow-sm'
+                      : 'hover:bg-accent/50 text-foreground/80 hover:text-foreground'
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`} />
+                  <span className="flex-1 truncate">{folder.name}</span>
+                  {folder.count !== undefined && (
+                    <Badge
+                      variant="secondary"
+                      className={`text-[10px] h-5 min-w-[20px] justify-center px-1.5 ${
+                        isActive
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {folder.count}
+                    </Badge>
+                  )}
+                  {isActive && (
+                    <div className="w-1 h-4 rounded-full bg-emerald-500 dark:bg-emerald-400 shrink-0" />
+                  )}
+                </motion.button>
+              );
+            }
+
+            // Parent folders with children (collapsible)
+            const Icon = folder.icon;
+            const isOpen = folder.id === 'categories' ? categoriesOpen : customOpen;
+            const setOpen = folder.id === 'categories' ? setCategoriesOpen : setCustomOpen;
+            const hasActiveChild = folder.children?.some(c => c.id === activeFolder);
+
+            return (
+              <Collapsible key={folder.id} open={isOpen} onOpenChange={setOpen}>
+                <CollapsibleTrigger asChild>
+                  <button className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-accent/30 transition-all">
+                    <motion.div
+                      animate={{ rotate: isOpen ? 90 : 0 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <ChevronRight className="h-3 w-3" />
+                    </motion.div>
+                    <Icon className="h-3.5 w-3.5" />
+                    <span className="flex-1">{folder.name}</span>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="ml-3 pl-2 border-l border-border space-y-0.5 mt-0.5">
+                    {folder.children?.map((child) => {
+                      const ChildIcon = child.icon;
+                      const isChildActive = activeFolder === child.id;
+                      return (
+                        <motion.button
+                          key={child.id}
+                          whileHover={{ x: 2 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => onFolderSelect(child.id)}
+                          className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-left transition-all text-xs group ${
+                            isChildActive
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 font-medium'
+                              : 'hover:bg-accent/50 text-foreground/70 hover:text-foreground'
+                          }`}
+                        >
+                          <ChildIcon className={`h-3.5 w-3.5 shrink-0 ${isChildActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`} />
+                          <span className="flex-1 truncate">{child.name}</span>
+                          {child.count !== undefined && (
+                            <Badge
+                              variant="secondary"
+                              className={`text-[9px] h-4 min-w-[18px] justify-center px-1 ${
+                                isChildActive
+                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400'
+                                  : 'bg-muted text-muted-foreground'
+                              }`}
+                            >
+                              {child.count}
+                            </Badge>
+                          )}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            );
+          })}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
+// ============================================================
+// Get folder name from ID
+// ============================================================
+
+function getFolderName(folderId: string, customFolders: FolderItem[]): string {
+  for (const f of folderTree) {
+    if (f.id === folderId) return f.name;
+    if (f.children) {
+      for (const c of f.children) {
+        if (c.id === folderId) return c.name;
+      }
+    }
+  }
+  for (const f of customFolders) {
+    if (f.id === folderId) return f.name;
+  }
+  return 'Documents';
+}
+
+// Get folder breadcrumb path
+function getFolderBreadcrumb(folderId: string, customFolders: FolderItem[]): string[] {
+  if (folderId === 'all') return ['All Documents'];
+  for (const f of folderTree) {
+    if (f.id === folderId) return [f.name];
+    if (f.children) {
+      for (const c of f.children) {
+        if (c.id === folderId) return ['Categories', c.name];
+      }
+    }
+  }
+  for (const f of customFolders) {
+    if (f.id === folderId) return ['Custom Folders', f.name];
+  }
+  return ['Documents'];
+}
+
+// ============================================================
+// Main Documents Page
+// ============================================================
+
 export function DocumentsPage() {
   const { navigate } = useAppStore();
   const queryClient = useQueryClient();
@@ -418,6 +738,11 @@ export function DocumentsPage() {
   const [sortBy, setSortBy] = useState<string>('updatedAt');
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+
+  // Folder state
+  const [activeFolder, setActiveFolder] = useState('all');
+  const [customFolders, setCustomFolders] = useState<FolderItem[]>(initialCustomFolders);
+  const [mobileFolderOpen, setMobileFolderOpen] = useState(false);
 
   // Fetch documents from API
   const { data: documentsData, isLoading } = useQuery({
@@ -438,6 +763,35 @@ export function DocumentsPage() {
   });
 
   const documents = documentsData || mockDocuments;
+
+  // Handle folder selection - map folder to category filter
+  const handleFolderSelect = useCallback((folderId: string) => {
+    setActiveFolder(folderId);
+    setMobileFolderOpen(false);
+
+    // Map folder IDs to category filter
+    const folderCategoryMap: Record<string, string> = {
+      'cat-contracts': 'contract',
+      'cat-agreements': 'agreement',
+      'cat-ndas': 'nda',
+      'cat-proposals': 'proposal',
+      'cat-invoices': 'invoice',
+      'cat-hr': 'hr',
+      'cat-legal': 'legal',
+    };
+
+    if (folderId in folderCategoryMap) {
+      setCategoryFilter(folderCategoryMap[folderId]);
+    } else if (folderId === 'all' || folderId === 'my' || folderId === 'shared' || folderId === 'templates' || folderId === 'archive') {
+      setCategoryFilter('');
+    }
+  }, []);
+
+  // Create custom folder
+  const handleCreateFolder = useCallback((name: string) => {
+    const id = `custom-${Date.now()}`;
+    setCustomFolders(prev => [...prev, { id, name, icon: FolderClosed, count: 0 }]);
+  }, []);
 
   const filteredDocuments = useMemo(() => {
     let docs = [...documents];
@@ -472,6 +826,17 @@ export function DocumentsPage() {
       );
     }
 
+    // Folder-specific filters
+    if (activeFolder === 'my') {
+      docs = docs.filter(d => d.owner.name === 'John Doe'); // Mock: current user
+    } else if (activeFolder === 'shared') {
+      docs = docs.filter(d => d.owner.name !== 'John Doe'); // Mock: shared by others
+    } else if (activeFolder === 'archive') {
+      docs = docs.filter(d => d.status === 'voided' || d.status === 'expired');
+    } else if (activeFolder === 'templates') {
+      docs = docs.filter(d => d.tags?.includes('template'));
+    }
+
     // Sort
     docs.sort((a, b) => {
       if (sortBy === 'updatedAt') return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
@@ -486,7 +851,7 @@ export function DocumentsPage() {
     });
 
     return docs;
-  }, [documents, search, statusFilter, priorityFilter, categoryFilter, sortBy]);
+  }, [documents, search, statusFilter, priorityFilter, categoryFilter, sortBy, activeFolder]);
 
   const toggleStatusFilter = (status: DocumentStatus) => {
     setStatusFilter((prev) =>
@@ -522,9 +887,10 @@ export function DocumentsPage() {
     setStatusFilter([]);
     setPriorityFilter([]);
     setCategoryFilter('');
+    setActiveFolder('all');
   };
 
-  const hasActiveFilters = statusFilter.length > 0 || priorityFilter.length > 0 || categoryFilter !== '';
+  const hasActiveFilters = statusFilter.length > 0 || priorityFilter.length > 0 || categoryFilter !== '' || activeFolder !== 'all';
 
   // Bulk actions
   const handleBulkArchive = () => {
@@ -538,6 +904,9 @@ export function DocumentsPage() {
   };
 
   const noDocsAtAll = !isLoading && filteredDocuments.length === 0 && !hasActiveFilters;
+
+  // Folder breadcrumb
+  const breadcrumb = getFolderBreadcrumb(activeFolder, customFolders);
 
   return (
     <div className="space-y-6">
@@ -560,344 +929,428 @@ export function DocumentsPage() {
         </div>
       </div>
 
-      {/* Search bar & quick filters */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div className="relative flex-1 w-full sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search documents..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 transition-shadow duration-200 focus-visible:shadow-[0_0_0_2px_rgba(16,185,129,0.2),0_0_15px_rgba(16,185,129,0.1)]"
-          />
-        </div>
+      {/* Folder Breadcrumb */}
+      <motion.div
+        initial={{ opacity: 0, y: -5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="flex items-center gap-1.5 text-sm"
+      >
+        <FolderOpen className="h-4 w-4 text-muted-foreground" />
+        {breadcrumb.map((crumb, i) => (
+          <span key={i} className="flex items-center gap-1.5">
+            {i > 0 && <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+            <span className={i === breadcrumb.length - 1 ? 'font-medium text-foreground' : 'text-muted-foreground'}>
+              {crumb}
+            </span>
+          </span>
+        ))}
+      </motion.div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="updatedAt">Last Updated</SelectItem>
-              <SelectItem value="createdAt">Date Created</SelectItem>
-              <SelectItem value="title">Title</SelectItem>
-              <SelectItem value="status">Status</SelectItem>
-              <SelectItem value="priority">Priority</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Filter panel toggle */}
-          <Button
-            variant={hasActiveFilters ? 'secondary' : 'outline'}
-            size="default"
-            onClick={() => setFilterPanelOpen(!filterPanelOpen)}
-            className="btn-click-scale"
-          >
-            <SlidersHorizontal className="mr-2 h-4 w-4" />
-            Filters
-            {hasActiveFilters && (
-              <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
-                {statusFilter.length + priorityFilter.length + (categoryFilter ? 1 : 0)}
-              </Badge>
-            )}
-          </Button>
-
-          {/* View toggle */}
-          <div className="flex border border-border rounded-md">
-            <Button
-              variant={view === 'grid' ? 'secondary' : 'ghost'}
-              size="icon"
-              className="h-9 w-9 rounded-r-none btn-click-scale"
-              onClick={() => setView('grid')}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={view === 'list' ? 'secondary' : 'ghost'}
-              size="icon"
-              className="h-9 w-9 rounded-l-none btn-click-scale"
-              onClick={() => setView('list')}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Collapsible advanced filter panel */}
-      <Collapsible open={filterPanelOpen} onOpenChange={setFilterPanelOpen}>
-        <AnimatePresence>
-          {filterPanelOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
-            >
-              <Card className="p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {/* Status filter */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <Filter className="h-3.5 w-3.5" /> Status
-                    </Label>
-                    <div className="space-y-2">
-                      {statusOptions.map((option) => (
-                        <div key={option.value} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`status-${option.value}`}
-                            checked={statusFilter.includes(option.value)}
-                            onCheckedChange={() => toggleStatusFilter(option.value)}
-                          />
-                          <Label
-                            htmlFor={`status-${option.value}`}
-                            className="text-sm font-normal cursor-pointer flex items-center gap-2"
-                          >
-                            <span className={`h-2 w-2 rounded-full ${option.color.split(' ')[0]}`} />
-                            {option.label}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Priority filter */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <Tag className="h-3.5 w-3.5" /> Priority
-                    </Label>
-                    <div className="space-y-2">
-                      {priorityOptions.map((option) => (
-                        <div key={option.value} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`priority-${option.value}`}
-                            checked={priorityFilter.includes(option.value)}
-                            onCheckedChange={() => togglePriorityFilter(option.value)}
-                          />
-                          <Label
-                            htmlFor={`priority-${option.value}`}
-                            className="text-sm font-normal cursor-pointer"
-                          >
-                            {option.label}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Category filter */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <FolderOpen className="h-3.5 w-3.5" /> Category
-                    </Label>
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All categories" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {categoryOptions.map((cat) => (
-                          <SelectItem key={cat} value={cat.toLowerCase()}>
-                            {cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Clear filters */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium">Actions</Label>
-                    <div className="space-y-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full btn-click-scale"
-                        onClick={clearAllFilters}
-                        disabled={!hasActiveFilters}
-                      >
-                        <X className="mr-2 h-3.5 w-3.5" />
-                        Clear All Filters
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </Collapsible>
-
-      {/* Active filter pills */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">Filtered by:</span>
-          {statusFilter.map((status) => (
-            <Badge
-              key={status}
-              variant="secondary"
-              className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors capitalize btn-click-scale"
-              onClick={() => toggleStatusFilter(status)}
-            >
-              {status} ×
-            </Badge>
-          ))}
-          {priorityFilter.map((priority) => (
-            <Badge
-              key={priority}
-              variant="secondary"
-              className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors capitalize btn-click-scale"
-              onClick={() => togglePriorityFilter(priority)}
-            >
-              {priority} ×
-            </Badge>
-          ))}
-          {categoryFilter && (
-            <Badge
-              variant="secondary"
-              className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors capitalize btn-click-scale"
-              onClick={() => setCategoryFilter('')}
-            >
-              {categoryFilter} ×
-            </Badge>
-          )}
-        </div>
-      )}
-
-      {/* Bulk actions bar */}
-      <AnimatePresence>
-        {selectedDocs.size > 0 && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
-              <CheckSquare className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">{selectedDocs.size} selected</span>
-              <Separator orientation="vertical" className="h-5" />
-              <Button size="sm" variant="outline" onClick={handleBulkArchive} className="btn-click-scale">
-                <Archive className="mr-1.5 h-3.5 w-3.5" />Archive
-              </Button>
-              <Button size="sm" variant="outline" className="text-destructive hover:text-destructive btn-click-scale" onClick={handleBulkDelete}>
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" />Delete
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setSelectedDocs(new Set())} className="btn-click-scale">
-                <XSquare className="mr-1.5 h-3.5 w-3.5" />Deselect All
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Loading state */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <Skeleton className="h-28 w-full rounded-lg mb-3" />
-                <Skeleton className="h-4 w-3/4 mb-2" />
-                <Skeleton className="h-3 w-1/2 mb-4" />
-                <div className="flex gap-2">
-                  <Skeleton className="h-5 w-16" />
-                  <Skeleton className="h-5 w-16" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : filteredDocuments.length === 0 ? (
-        /* Empty state with illustration */
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-20"
+      {/* Main Layout: Sidebar + Content */}
+      <div className="flex gap-6">
+        {/* Desktop Folder Sidebar */}
+        <motion.aside
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1, duration: 0.3 }}
+          className="hidden lg:block w-[200px] shrink-0"
         >
-          <motion.div
-            className="mx-auto w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4"
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <Inbox className="h-10 w-10 text-muted-foreground/30" />
-          </motion.div>
-          <h3 className="text-lg font-medium mb-1">No documents found</h3>
-          <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-6">
-            {hasActiveFilters
-              ? "No documents match your current filters. Try adjusting or clearing them."
-              : "Get started by uploading your first document or creating one from a template."}
-          </p>
-          <div className="flex gap-3 justify-center">
-            {hasActiveFilters ? (
-              <Button variant="outline" onClick={clearAllFilters} className="btn-click-scale">
-                Clear Filters
+          <Card className="p-3 sticky top-6">
+            <FolderSidebar
+              activeFolder={activeFolder}
+              onFolderSelect={handleFolderSelect}
+              customFolders={customFolders}
+              onCreateFolder={handleCreateFolder}
+            />
+          </Card>
+        </motion.aside>
+
+        {/* Mobile Folder Sheet */}
+        <div className="lg:hidden">
+          <Sheet open={mobileFolderOpen} onOpenChange={setMobileFolderOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2 mb-3">
+                <Menu className="h-4 w-4" />
+                Folders
+                {activeFolder !== 'all' && (
+                  <Badge className="ml-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[9px] px-1.5 border-0">
+                    {getFolderName(activeFolder, customFolders)}
+                  </Badge>
+                )}
               </Button>
-            ) : (
-              <>
-                <DocumentUploadDialog />
-                <Button variant="outline" onClick={() => navigate('templates')} className="btn-click-scale">
-                  <FileSignature className="mr-2 h-4 w-4" />
-                  Use Template
-                </Button>
-              </>
-            )}
-          </div>
-        </motion.div>
-      ) : view === 'grid' ? (
-        /* Grid view */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <AnimatePresence mode="popLayout">
-            {filteredDocuments.map((doc, i) => (
-              <EnhancedDocumentCard
-                key={doc.id}
-                document={doc}
-                onClick={() => navigate('document-detail', { id: doc.id })}
-                selected={selectedDocs.has(doc.id)}
-                onToggleSelect={() => toggleSelectDoc(doc.id)}
-              />
-            ))}
-          </AnimatePresence>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  <FolderOpen className="h-5 w-5 text-primary" />
+                  Document Folders
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-4">
+                <FolderSidebar
+                  activeFolder={activeFolder}
+                  onFolderSelect={handleFolderSelect}
+                  customFolders={customFolders}
+                  onCreateFolder={handleCreateFolder}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
-      ) : (
-        /* List view */
-        <Card className="overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={selectedDocs.size === filteredDocuments.length && filteredDocuments.length > 0}
-                    onCheckedChange={toggleSelectAll}
-                  />
-                </TableHead>
-                <TableHead>Document</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Owner</TableHead>
-                <TableHead>Signatures</TableHead>
-                <TableHead>Updated</TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+
+        {/* Main Content Area */}
+        <div className="flex-1 min-w-0 space-y-6">
+          {/* Search bar & quick filters */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="relative flex-1 w-full sm:max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search documents..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 transition-shadow duration-200 focus-visible:shadow-[0_0_0_2px_rgba(16,185,129,0.2),0_0_15px_rgba(16,185,129,0.1)]"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="updatedAt">Last Updated</SelectItem>
+                  <SelectItem value="createdAt">Date Created</SelectItem>
+                  <SelectItem value="title">Title</SelectItem>
+                  <SelectItem value="status">Status</SelectItem>
+                  <SelectItem value="priority">Priority</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Filter panel toggle */}
+              <Button
+                variant={hasActiveFilters ? 'secondary' : 'outline'}
+                size="default"
+                onClick={() => setFilterPanelOpen(!filterPanelOpen)}
+                className="btn-click-scale"
+              >
+                <SlidersHorizontal className="mr-2 h-4 w-4" />
+                Filters
+                {hasActiveFilters && (
+                  <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
+                    {statusFilter.length + priorityFilter.length + (categoryFilter ? 1 : 0)}
+                  </Badge>
+                )}
+              </Button>
+
+              {/* View toggle */}
+              <div className="flex border border-border rounded-md">
+                <Button
+                  variant={view === 'grid' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-9 w-9 rounded-r-none btn-click-scale"
+                  onClick={() => setView('grid')}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={view === 'list' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-9 w-9 rounded-l-none btn-click-scale"
+                  onClick={() => setView('list')}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Collapsible advanced filter panel */}
+          <Collapsible open={filterPanelOpen} onOpenChange={setFilterPanelOpen}>
+            <AnimatePresence>
+              {filterPanelOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <Card className="p-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                      {/* Status filter */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium flex items-center gap-2">
+                          <Filter className="h-3.5 w-3.5" /> Status
+                        </Label>
+                        <div className="space-y-2">
+                          {statusOptions.map((option) => (
+                            <div key={option.value} className="flex items-center gap-2">
+                              <Checkbox
+                                id={`status-${option.value}`}
+                                checked={statusFilter.includes(option.value)}
+                                onCheckedChange={() => toggleStatusFilter(option.value)}
+                              />
+                              <Label
+                                htmlFor={`status-${option.value}`}
+                                className="text-sm font-normal cursor-pointer flex items-center gap-2"
+                              >
+                                <span className={`h-2 w-2 rounded-full ${option.color.split(' ')[0]}`} />
+                                {option.label}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Priority filter */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium flex items-center gap-2">
+                          <Tag className="h-3.5 w-3.5" /> Priority
+                        </Label>
+                        <div className="space-y-2">
+                          {priorityOptions.map((option) => (
+                            <div key={option.value} className="flex items-center gap-2">
+                              <Checkbox
+                                id={`priority-${option.value}`}
+                                checked={priorityFilter.includes(option.value)}
+                                onCheckedChange={() => togglePriorityFilter(option.value)}
+                              />
+                              <Label
+                                htmlFor={`priority-${option.value}`}
+                                className="text-sm font-normal cursor-pointer"
+                              >
+                                {option.label}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Category filter */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium flex items-center gap-2">
+                          <FolderOpen className="h-3.5 w-3.5" /> Category
+                        </Label>
+                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="All categories" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Categories</SelectItem>
+                            {categoryOptions.map((cat) => (
+                              <SelectItem key={cat} value={cat.toLowerCase()}>
+                                {cat}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Clear filters */}
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">Actions</Label>
+                        <div className="space-y-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full btn-click-scale"
+                            onClick={clearAllFilters}
+                            disabled={!hasActiveFilters}
+                          >
+                            <X className="mr-2 h-3.5 w-3.5" />
+                            Clear All Filters
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Collapsible>
+
+          {/* Active filter pills */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">Filtered by:</span>
+              {activeFolder !== 'all' && (
+                <Badge
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors btn-click-scale bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
+                  onClick={() => { setActiveFolder('all'); setCategoryFilter(''); }}
+                >
+                  <FolderOpen className="mr-1 h-3 w-3" />
+                  {getFolderName(activeFolder, customFolders)} ×
+                </Badge>
+              )}
+              {statusFilter.map((status) => (
+                <Badge
+                  key={status}
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors capitalize btn-click-scale"
+                  onClick={() => toggleStatusFilter(status)}
+                >
+                  {status} ×
+                </Badge>
+              ))}
+              {priorityFilter.map((priority) => (
+                <Badge
+                  key={priority}
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors capitalize btn-click-scale"
+                  onClick={() => togglePriorityFilter(priority)}
+                >
+                  {priority} ×
+                </Badge>
+              ))}
+              {categoryFilter && activeFolder === 'all' && (
+                <Badge
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors capitalize btn-click-scale"
+                  onClick={() => setCategoryFilter('')}
+                >
+                  {categoryFilter} ×
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* Bulk actions bar */}
+          <AnimatePresence>
+            {selectedDocs.size > 0 && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <CheckSquare className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">{selectedDocs.size} selected</span>
+                  <Separator orientation="vertical" className="h-5" />
+                  <Button size="sm" variant="outline" onClick={handleBulkArchive} className="btn-click-scale">
+                    <Archive className="mr-1.5 h-3.5 w-3.5" />Archive
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-destructive hover:text-destructive btn-click-scale" onClick={handleBulkDelete}>
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />Delete
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedDocs(new Set())} className="btn-click-scale">
+                    <XSquare className="mr-1.5 h-3.5 w-3.5" />Deselect All
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Loading state */}
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-4">
+                    <Skeleton className="h-28 w-full rounded-lg mb-3" />
+                    <Skeleton className="h-4 w-3/4 mb-2" />
+                    <Skeleton className="h-3 w-1/2 mb-4" />
+                    <div className="flex gap-2">
+                      <Skeleton className="h-5 w-16" />
+                      <Skeleton className="h-5 w-16" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : filteredDocuments.length === 0 ? (
+            /* Empty state with illustration */
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-20"
+            >
+              <motion.div
+                className="mx-auto w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4"
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <Inbox className="h-10 w-10 text-muted-foreground/30" />
+              </motion.div>
+              <h3 className="text-lg font-medium mb-1">No documents found</h3>
+              <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-6">
+                {hasActiveFilters
+                  ? "No documents match your current filters. Try adjusting or clearing them."
+                  : "Get started by uploading your first document or creating one from a template."}
+              </p>
+              <div className="flex gap-3 justify-center">
+                {hasActiveFilters ? (
+                  <Button variant="outline" onClick={clearAllFilters} className="btn-click-scale">
+                    Clear Filters
+                  </Button>
+                ) : (
+                  <>
+                    <DocumentUploadDialog />
+                    <Button variant="outline" onClick={() => navigate('templates')} className="btn-click-scale">
+                      <FileSignature className="mr-2 h-4 w-4" />
+                      Use Template
+                    </Button>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          ) : view === 'grid' ? (
+            /* Grid view */
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               <AnimatePresence mode="popLayout">
                 {filteredDocuments.map((doc, i) => (
-                  <EnhancedDocumentTableRow
+                  <EnhancedDocumentCard
                     key={doc.id}
                     document={doc}
                     onClick={() => navigate('document-detail', { id: doc.id })}
                     selected={selectedDocs.has(doc.id)}
                     onToggleSelect={() => toggleSelectDoc(doc.id)}
-                    index={i}
                   />
                 ))}
               </AnimatePresence>
-            </TableBody>
-          </Table>
-        </Card>
-      )}
+            </div>
+          ) : (
+            /* List view */
+            <Card className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={selectedDocs.size === filteredDocuments.length && filteredDocuments.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
+                    <TableHead>Document</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead>Signatures</TableHead>
+                    <TableHead>Updated</TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <AnimatePresence mode="popLayout">
+                    {filteredDocuments.map((doc, i) => (
+                      <EnhancedDocumentTableRow
+                        key={doc.id}
+                        document={doc}
+                        onClick={() => navigate('document-detail', { id: doc.id })}
+                        selected={selectedDocs.has(doc.id)}
+                        onToggleSelect={() => toggleSelectDoc(doc.id)}
+                        index={i}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </TableBody>
+              </Table>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

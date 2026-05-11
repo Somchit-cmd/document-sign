@@ -33,6 +33,13 @@ import {
   Zap,
   Calendar,
   Bell,
+  BarChart3,
+  UserPlus,
+  HelpCircle,
+  MessageSquare,
+  Eye,
+  PenTool,
+  ThumbsUp,
 } from 'lucide-react';
 import {
   BarChart,
@@ -66,9 +73,74 @@ const monthlyData = [
 const defaultStatusData = [
   { name: 'Completed', value: 156, color: '#10b981' },
   { name: 'Pending', value: 23, color: '#f59e0b' },
-  { name: 'Sent', value: 18, color: '#06b6d4' },
+  { name: 'Signed', value: 34, color: '#14b8a6' },
   { name: 'Draft', value: 12, color: '#94a3b8' },
   { name: 'Rejected', value: 5, color: '#ef4444' },
+  { name: 'Voided', value: 3, color: '#6b7280' },
+];
+
+// Weekly Activity Bar Chart data (current week Mon-Sun)
+const weeklyActivityData = [
+  { name: 'Mon', created: 8, signed: 5, approved: 3 },
+  { name: 'Tue', created: 12, signed: 9, approved: 6 },
+  { name: 'Wed', created: 15, signed: 11, approved: 8 },
+  { name: 'Thu', created: 10, signed: 7, approved: 5 },
+  { name: 'Fri', created: 14, signed: 10, approved: 7 },
+  { name: 'Sat', created: 4, signed: 2, approved: 1 },
+  { name: 'Sun', created: 2, signed: 1, approved: 0 },
+];
+
+// Expiring soon documents
+const now = new Date();
+
+// Upcoming Deadlines data (top 5 with priority colors)
+const upcomingDeadlines = [
+  {
+    id: 'ud-1',
+    title: 'Enterprise License Agreement',
+    deadline: new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString(),
+    assignedTo: 'David Kim',
+    priority: 'urgent' as const,
+  },
+  {
+    id: 'ud-2',
+    title: 'Employment Agreement - M. Torres',
+    deadline: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    assignedTo: 'Sarah Chen',
+    priority: 'high' as const,
+  },
+  {
+    id: 'ud-3',
+    title: 'Vendor Contract - CloudSync',
+    deadline: new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+    assignedTo: 'John Martinez',
+    priority: 'high' as const,
+  },
+  {
+    id: 'ud-4',
+    title: 'Partnership MOU - DataViz',
+    deadline: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    assignedTo: 'Emily Watson',
+    priority: 'normal' as const,
+  },
+  {
+    id: 'ud-5',
+    title: 'Sales Contract - Global Logistics',
+    deadline: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    assignedTo: 'Lisa Park',
+    priority: 'normal' as const,
+  },
+];
+
+// Enhanced Team Activity Feed data
+const enhancedTeamActivity = [
+  { name: 'Sarah Chen', action: 'signed', target: 'Q4 Sales Agreement', time: '2m ago', avatar: 'SC', actionIcon: PenTool, actionColor: 'text-emerald-600 dark:text-emerald-400' },
+  { name: 'Mike Johnson', action: 'approved', target: 'Vendor Contract', time: '15m ago', avatar: 'MJ', actionIcon: ThumbsUp, actionColor: 'text-teal-600 dark:text-teal-400' },
+  { name: 'Emily Davis', action: 'commented on', target: 'NDA - Acme Corp', time: '1h ago', avatar: 'ED', actionIcon: MessageSquare, actionColor: 'text-cyan-600 dark:text-cyan-400' },
+  { name: 'Alex Kim', action: 'viewed', target: 'Partnership Proposal', time: '2h ago', avatar: 'AK', actionIcon: Eye, actionColor: 'text-blue-600 dark:text-blue-400' },
+  { name: 'Lisa Wang', action: 'signed', target: 'Lease Agreement', time: '3h ago', avatar: 'LW', actionIcon: PenTool, actionColor: 'text-emerald-600 dark:text-emerald-400' },
+  { name: 'David Kim', action: 'approved', target: 'Service Agreement', time: '4h ago', avatar: 'DK', actionIcon: ThumbsUp, actionColor: 'text-teal-600 dark:text-teal-400' },
+  { name: 'Rachel Lee', action: 'commented on', target: 'Procurement Contract', time: '5h ago', avatar: 'RL', actionIcon: MessageSquare, actionColor: 'text-cyan-600 dark:text-cyan-400' },
 ];
 
 // Signing Analytics mock data
@@ -84,8 +156,6 @@ const signingAnalytics = {
   ],
 };
 
-// Expiring soon documents
-const now = new Date();
 const expiringSoonDocs = [
   {
     id: 'doc-exp-1',
@@ -184,12 +254,12 @@ const deadlineData = [
   },
 ];
 
-// Quick Actions configuration
+// Quick Actions / Quick Links configuration (expanded to 6)
 const quickActions = [
   {
     id: 'upload',
     label: 'Upload Document',
-    description: 'Upload a PDF to sign',
+    description: 'Upload a PDF to sign or send',
     icon: Upload,
     color: 'from-emerald-500 to-teal-600',
     bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
@@ -197,30 +267,48 @@ const quickActions = [
   },
   {
     id: 'template',
-    label: 'Create from Template',
-    description: 'Use a pre-built template',
+    label: 'Create Template',
+    description: 'Build reusable templates',
     icon: LayoutTemplate,
     color: 'from-teal-500 to-cyan-600',
     bgColor: 'bg-teal-50 dark:bg-teal-950/30',
     page: 'templates' as const,
   },
   {
-    id: 'send',
-    label: 'Send for Signature',
-    description: 'Route to signers',
-    icon: Send,
+    id: 'reports',
+    label: 'View Reports',
+    description: 'Analytics & insights',
+    icon: BarChart3,
     color: 'from-cyan-500 to-teal-600',
     bgColor: 'bg-cyan-50 dark:bg-cyan-950/30',
+    page: 'reports' as const,
+  },
+  {
+    id: 'send',
+    label: 'Request Signature',
+    description: 'Send for e-signature',
+    icon: Send,
+    color: 'from-amber-500 to-orange-600',
+    bgColor: 'bg-amber-50 dark:bg-amber-950/30',
     page: 'documents' as const,
   },
   {
-    id: 'inbox',
-    label: 'View Inbox',
-    description: 'Pending approvals',
-    icon: Inbox,
-    bgColor: 'bg-amber-50 dark:bg-amber-950/30',
-    color: 'from-amber-500 to-orange-600',
-    page: 'inbox' as const,
+    id: 'invite',
+    label: 'Invite Team Member',
+    description: 'Add users to workspace',
+    icon: UserPlus,
+    color: 'from-violet-500 to-purple-600',
+    bgColor: 'bg-violet-50 dark:bg-violet-950/30',
+    page: 'admin' as const,
+  },
+  {
+    id: 'help',
+    label: 'Help Center',
+    description: 'Guides & documentation',
+    icon: HelpCircle,
+    color: 'from-slate-500 to-gray-600',
+    bgColor: 'bg-slate-50 dark:bg-slate-950/30',
+    page: 'settings' as const,
   },
 ];
 
@@ -367,24 +455,31 @@ function getCountdownText(deadline: string) {
 // Helper: Team Activity Item
 // ============================================================
 
-function TeamActivityItem({ name, action, target, time, avatar }: {
+function TeamActivityItem({ name, action, target, time, avatar, actionIcon: ActionIcon, actionColor }: {
   name: string;
   action: string;
   target: string;
   time: string;
   avatar: string;
+  actionIcon: React.ElementType;
+  actionColor: string;
 }) {
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      className="flex items-center gap-3 py-2"
+      className="flex items-center gap-3 py-2 group"
     >
-      <Avatar className="h-7 w-7 shrink-0">
-        <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-semibold">
-          {avatar}
-        </AvatarFallback>
-      </Avatar>
+      <div className="relative shrink-0">
+        <Avatar className="h-7 w-7">
+          <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-semibold">
+            {avatar}
+          </AvatarFallback>
+        </Avatar>
+        <div className={`absolute -bottom-0.5 -right-0.5 rounded-full bg-card p-0.5 ${actionColor}`}>
+          <ActionIcon className="h-2.5 w-2.5" />
+        </div>
+      </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs truncate">
           <span className="font-medium">{name}</span>{' '}
@@ -392,7 +487,7 @@ function TeamActivityItem({ name, action, target, time, avatar }: {
           <span className="font-medium text-primary/80 truncate">{target}</span>
         </p>
       </div>
-      <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0">{time}</span>
+      <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">{time}</span>
     </motion.div>
   );
 }
@@ -517,14 +612,7 @@ export function DashboardPage() {
     { icon: Bell, label: 'unread notifications', value: unreadCount, color: 'text-amber-600 dark:text-amber-400' },
   ], [unreadCount]);
 
-  // Mock team activity data
-  const teamActivity = [
-    { name: 'Sarah Chen', action: 'signed', target: 'Q4 Sales Agreement', time: '2m ago', avatar: 'SC' },
-    { name: 'Mike Johnson', action: 'approved', target: 'Vendor Contract', time: '15m ago', avatar: 'MJ' },
-    { name: 'Emily Davis', action: 'sent', target: 'NDA - Acme Corp', time: '1h ago', avatar: 'ED' },
-    { name: 'Alex Kim', action: 'viewed', target: 'Partnership Proposal', time: '2h ago', avatar: 'AK' },
-    { name: 'Lisa Wang', action: 'rejected', target: 'Lease Agreement', time: '3h ago', avatar: 'LW' },
-  ];
+
 
   // Heatmap max value for intensity calculation
   const heatmapMax = useMemo(
@@ -693,8 +781,8 @@ export function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.4 }}
       >
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Links</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {quickActions.map((action, i) => {
             const Icon = action.icon;
             return (
@@ -842,6 +930,214 @@ export function DashboardPage() {
         </div>
       </motion.div>
 
+      {/* Weekly Activity Chart */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.42, duration: 0.4 }}
+      >
+        <Card className="border-border overflow-hidden">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              Weekly Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={weeklyActivityData} barGap={4} barCategoryGap="20%">
+                <defs>
+                  <linearGradient id="weeklyCreated" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.5} />
+                  </linearGradient>
+                  <linearGradient id="weeklySigned" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#14b8a6" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#14b8a6" stopOpacity={0.5} />
+                  </linearGradient>
+                  <linearGradient id="weeklyApproved" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#06b6d4" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.5} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="name" className="text-xs" tick={{ fill: 'var(--muted-foreground)' }} />
+                <YAxis className="text-xs" tick={{ fill: 'var(--muted-foreground)' }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                />
+                <Legend
+                  verticalAlign="top"
+                  height={28}
+                  formatter={(value) => (
+                    <span className="text-xs text-foreground">{value}</span>
+                  )}
+                />
+                <Bar dataKey="created" fill="url(#weeklyCreated)" radius={[3, 3, 0, 0]} name="Created" />
+                <Bar dataKey="signed" fill="url(#weeklySigned)" radius={[3, 3, 0, 0]} name="Signed" />
+                <Bar dataKey="approved" fill="url(#weeklyApproved)" radius={[3, 3, 0, 0]} name="Approved" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Upcoming Deadlines & Document Status Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Upcoming Deadlines */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.45, duration: 0.4 }}
+        >
+          <Card className="border-border overflow-hidden h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary" />
+                Upcoming Deadlines
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2.5">
+                {upcomingDeadlines.map((dl, i) => {
+                  const countdown = getCountdownText(dl.deadline);
+                  const isOverdue = countdown.isOverdue;
+                  const isUrgent = dl.priority === 'urgent';
+                  const isHigh = dl.priority === 'high';
+                  const priorityColor = isUrgent
+                    ? { border: 'border-l-red-500', bg: 'bg-red-50 dark:bg-red-950/20', text: 'text-red-600 dark:text-red-400', badge: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' }
+                    : isHigh
+                      ? { border: 'border-l-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/20', text: 'text-amber-600 dark:text-amber-400', badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' }
+                      : { border: 'border-l-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/20', text: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' };
+
+                  return (
+                    <motion.div
+                      key={dl.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05, duration: 0.2 }}
+                      whileHover={{ scale: 1.01, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+                      onClick={() => navigate('documents')}
+                      className={`flex items-center gap-3 p-3 rounded-lg border-l-4 ${priorityColor.border} border border-border ${priorityColor.bg} cursor-pointer hover:shadow-sm transition-all group`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                          {dl.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{dl.assignedTo}</p>
+                      </div>
+                      <motion.div
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold shrink-0 ${priorityColor.badge}`}
+                        {...(isUrgent || isOverdue ? {
+                          animate: { scale: [1, 1.05, 1] },
+                          transition: { duration: 2, repeat: Infinity },
+                        } : {})}
+                      >
+                        {isOverdue && <AlertTriangle className="h-3 w-3" />}
+                        {isUrgent && !isOverdue && <Zap className="h-3 w-3" />}
+                        {!isUrgent && !isOverdue && <Clock className="h-3 w-3" />}
+                        {countdown.text}
+                      </motion.div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Document Status Breakdown */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+        >
+          <Card className="border-border overflow-hidden h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" />
+                Document Status Breakdown
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="w-48 shrink-0">
+                  <ResponsiveContainer width="100%" height={180}>
+                    <PieChart>
+                      <defs>
+                        {defaultStatusData.map((entry, index) => (
+                          <linearGradient key={`grad-${index}`} id={`statusGrad-${index}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor={entry.color} stopOpacity={1} />
+                            <stop offset="100%" stopColor={entry.color} stopOpacity={0.6} />
+                          </linearGradient>
+                        ))}
+                      </defs>
+                      <Pie
+                        data={defaultStatusData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={75}
+                        paddingAngle={3}
+                        dataKey="value"
+                        animationBegin={0}
+                        animationDuration={800}
+                      >
+                        {defaultStatusData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={`url(#statusGrad-${index})`} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'var(--card)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 space-y-2 w-full">
+                  {defaultStatusData.map((item, i) => {
+                    const total = defaultStatusData.reduce((sum, d) => sum + d.value, 0);
+                    const pct = Math.round((item.value / total) * 100);
+                    return (
+                      <motion.div
+                        key={item.name}
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 + i * 0.06, duration: 0.3 }}
+                        className="flex items-center gap-3 group"
+                      >
+                        <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                        <span className="text-xs font-medium w-20 truncate">{item.name}</span>
+                        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full"
+                            style={{ backgroundColor: item.color }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ delay: 0.3 + i * 0.08, duration: 0.6, ease: 'easeOut' }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground w-12 text-right">{item.value}</span>
+                        <span className="text-[10px] text-muted-foreground w-8 text-right">{pct}%</span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <motion.div
@@ -893,7 +1189,7 @@ export function DashboardPage() {
         >
           <Card className="border-border overflow-hidden">
             <CardHeader>
-              <CardTitle className="text-base">Document Status</CardTitle>
+              <CardTitle className="text-base">Document Activity Trend</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={280}>
@@ -1212,7 +1508,7 @@ export function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="max-h-96 overflow-y-auto">
-                {teamActivity.map((item, i) => (
+                {enhancedTeamActivity.map((item, i) => (
                   <TeamActivityItem key={i} {...item} />
                 ))}
               </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useQuery } from '@tanstack/react-query';
 import { api, mockUsers } from '@/lib/api';
@@ -414,14 +414,32 @@ function ContactCard({ user, index, onViewProfile, onSendDocument }: ContactCard
   const roleVariant = ROLE_BADGE_VARIANTS[user.role] || ROLE_BADGE_VARIANTS.viewer;
   const docCount = getRandomDocCount(user.id);
 
+  // Determine status: online, away (30min), or offline
+  const status = useMemo(() => {
+    if (!user.lastLogin) return 'offline';
+    const diff = Date.now() - new Date(user.lastLogin).getTime();
+    if (diff < 15 * 60 * 1000) return 'online';
+    if (diff < 30 * 60 * 1000) return 'away';
+    return 'offline';
+  }, [user.lastLogin]);
+
+  const statusColors = {
+    online: 'bg-emerald-500 animate-status-pulse',
+    away: 'bg-amber-400',
+    offline: 'bg-gray-400',
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.05 }}
+      transition={{ duration: 0.3, delay: index * 0.06 }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="card-hover-lift"
     >
       <Card className="group relative overflow-hidden hover:shadow-lg transition-all duration-300 border-border/60">
+        {/* Gradient left border based on department */}
+        <div className={cn('absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b', deptColor.gradient)} />
         {/* Top gradient bar */}
         <div className={cn('h-1.5 w-full bg-gradient-to-r', deptColor.gradient)} />
 
@@ -437,7 +455,7 @@ function ContactCard({ user, index, onViewProfile, onSendDocument }: ContactCard
               <span
                 className={cn(
                   'absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background',
-                  online ? 'bg-emerald-500' : 'bg-gray-400'
+                  statusColors[status]
                 )}
               />
             </div>
@@ -934,13 +952,29 @@ export function ContactsPage() {
           {/* Search + Filters row */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <motion.div
+                animate={{ rotate: searchQuery ? 90 : 0, scale: searchQuery ? 1.1 : 1 }}
+                transition={{ duration: 0.2 }}
+                className="absolute left-3 top-1/2 -translate-y-1/2"
+              >
+                <Search className={cn('h-4 w-4', searchQuery ? 'text-emerald-500' : 'text-muted-foreground')} />
+              </motion.div>
               <Input
                 placeholder="Search contacts by name, email, title..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-sm"
+                className="pl-9 h-9 text-sm input-glow-focus"
               />
+              {searchQuery && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-muted-foreground/20 hover:bg-muted-foreground/40 flex items-center justify-center transition-colors"
+                >
+                  <span className="text-[10px] text-muted-foreground leading-none">×</span>
+                </motion.button>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -978,7 +1012,7 @@ export function ContactsPage() {
           </div>
         </div>
 
-        {/* Department Tabs */}
+        {/* Department Tabs with animated underline */}
         <div className="px-4 sm:px-6 pb-3">
           <Tabs
             value={departmentFilter}
@@ -986,26 +1020,30 @@ export function ContactsPage() {
             className="w-full"
           >
             <ScrollArea className="w-full">
-              <TabsList className="h-9 p-0.5 bg-muted/30">
+              <TabsList className="h-9 p-0 bg-transparent border-b border-border rounded-none gap-0">
                 <TabsTrigger
                   value="all"
-                  className="h-8 px-3 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                  className="h-9 px-3 text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 transition-all duration-200"
                   onClick={() => setDepartmentFilter('all')}
                 >
                   All
                 </TabsTrigger>
                 {departments
                   .filter((d) => d !== 'All')
-                  .map((d) => (
-                    <TabsTrigger
-                      key={d}
-                      value={d}
-                      className="h-8 px-3 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm"
-                      onClick={() => setDepartmentFilter(d)}
-                    >
-                      {d}
-                    </TabsTrigger>
-                  ))}
+                  .map((d) => {
+                    const deptColor = getDeptColor(d);
+                    return (
+                      <TabsTrigger
+                        key={d}
+                        value={d}
+                        className="h-9 px-3 text-xs rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 transition-all duration-200"
+                        onClick={() => setDepartmentFilter(d)}
+                      >
+                        <span className={cn('w-1.5 h-1.5 rounded-full mr-1.5', deptColor.avatar)} />
+                        {d}
+                      </TabsTrigger>
+                    );
+                  })}
               </TabsList>
             </ScrollArea>
           </Tabs>
@@ -1024,23 +1062,24 @@ export function ContactsPage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: i * 0.05 }}
               >
-                <Card className="overflow-hidden">
-                  <div className="h-1.5 bg-muted animate-pulse" />
+                <Card className="overflow-hidden relative">
+                  <div className="h-1.5 skeleton-shimmer" />
+                  <div className="absolute left-0 top-0 bottom-0 w-1 skeleton-shimmer" />
                   <CardContent className="p-5 space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-full bg-muted animate-pulse" />
+                      <div className="h-12 w-12 rounded-full skeleton-shimmer" />
                       <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
-                        <div className="h-3 bg-muted rounded animate-pulse w-1/2" />
+                        <div className="h-4 skeleton-shimmer w-3/4" />
+                        <div className="h-3 skeleton-shimmer w-1/2" />
                       </div>
                     </div>
                     <div className="flex gap-1.5">
-                      <div className="h-5 w-16 bg-muted rounded-full animate-pulse" />
-                      <div className="h-5 w-14 bg-muted rounded-full animate-pulse" />
+                      <div className="h-5 w-16 skeleton-shimmer rounded-full" />
+                      <div className="h-5 w-14 skeleton-shimmer rounded-full" />
                     </div>
                     <div className="space-y-2">
-                      <div className="h-3 bg-muted rounded animate-pulse w-full" />
-                      <div className="h-3 bg-muted rounded animate-pulse w-3/4" />
+                      <div className="h-3 skeleton-shimmer w-full" />
+                      <div className="h-3 skeleton-shimmer w-3/4" />
                     </div>
                   </CardContent>
                 </Card>
