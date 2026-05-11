@@ -20,6 +20,7 @@ import {
   GitBranch,
   Keyboard,
   BarChart3,
+  Bell,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +42,7 @@ const navGroups = [
       { id: 'inbox', label: 'Inbox', icon: Inbox, badge: 'inbox' },
       { id: 'documents', label: 'Documents', icon: FileText, badge: 'docs' },
       { id: 'contacts', label: 'Contacts', icon: Users },
+      { id: 'notifications', label: 'Notifications', icon: Bell },
     ],
   },
   {

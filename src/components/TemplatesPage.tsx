@@ -16,6 +16,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,6 +29,13 @@ import {
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   Search,
   LayoutTemplate,
@@ -42,21 +50,36 @@ import {
   BarChart3,
   X,
   Check,
+  Copy,
+  Pencil,
+  Zap,
+  ChevronRight,
+  ScrollText,
+  ShieldCheck,
+  Briefcase,
+  Receipt,
+  Heart,
+  Scale,
+  FolderOpen,
+  Star,
+  ArrowLeftRight,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
 import { useAppStore } from '@/lib/store';
 import { EmptyState } from './EmptyState';
 
-const categories: { value: TemplateCategory | 'all'; label: string; icon?: React.ReactNode }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'contract', label: 'Contracts' },
-  { value: 'agreement', label: 'Agreements' },
-  { value: 'nda', label: 'NDAs' },
-  { value: 'proposal', label: 'Proposals' },
-  { value: 'invoice', label: 'Invoices' },
-  { value: 'hr', label: 'HR' },
-  { value: 'legal', label: 'Legal' },
+// Category definitions with icons and gradient colors
+const categories: { value: TemplateCategory | 'all'; label: string; icon: React.ReactNode; gradient: string }[] = [
+  { value: 'all', label: 'All', icon: <LayoutTemplate className="h-3.5 w-3.5" />, gradient: 'from-emerald-500 to-teal-500' },
+  { value: 'contract', label: 'Contracts', icon: <ScrollText className="h-3.5 w-3.5" />, gradient: 'from-teal-500 to-cyan-500' },
+  { value: 'agreement', label: 'Agreements', icon: <ShieldCheck className="h-3.5 w-3.5" />, gradient: 'from-emerald-500 to-green-500' },
+  { value: 'nda', label: 'NDAs', icon: <Scale className="h-3.5 w-3.5" />, gradient: 'from-purple-500 to-violet-500' },
+  { value: 'proposal', label: 'Proposals', icon: <Briefcase className="h-3.5 w-3.5" />, gradient: 'from-cyan-500 to-blue-500' },
+  { value: 'invoice', label: 'Finance', icon: <Receipt className="h-3.5 w-3.5" />, gradient: 'from-amber-500 to-orange-500' },
+  { value: 'hr', label: 'HR', icon: <Heart className="h-3.5 w-3.5" />, gradient: 'from-pink-500 to-rose-500' },
+  { value: 'legal', label: 'Legal', icon: <Scale className="h-3.5 w-3.5" />, gradient: 'from-red-500 to-rose-500' },
+  { value: 'other', label: 'Custom', icon: <FolderOpen className="h-3.5 w-3.5" />, gradient: 'from-gray-500 to-slate-500' },
 ];
 
 const categoryColors: Record<string, string> = {
@@ -70,15 +93,136 @@ const categoryColors: Record<string, string> = {
   other: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
 };
 
-// Enhanced Template Card with hover preview & usage stats
+// Top border gradient per category
+const categoryBorderGradients: Record<string, string> = {
+  contract: 'bg-gradient-to-r from-teal-400 to-cyan-400',
+  agreement: 'bg-gradient-to-r from-emerald-400 to-green-400',
+  nda: 'bg-gradient-to-r from-purple-400 to-violet-400',
+  proposal: 'bg-gradient-to-r from-cyan-400 to-blue-400',
+  invoice: 'bg-gradient-to-r from-amber-400 to-orange-400',
+  hr: 'bg-gradient-to-r from-pink-400 to-rose-400',
+  legal: 'bg-gradient-to-r from-red-400 to-rose-400',
+  other: 'bg-gradient-to-r from-gray-400 to-slate-400',
+};
+
+// Template type icon mapping
+const categoryIconMap: Record<string, { icon: React.ReactNode; bg: string }> = {
+  contract: { icon: <ScrollText className="h-5 w-5" />, bg: 'bg-teal-500/10 text-teal-600 dark:text-teal-400' },
+  agreement: { icon: <ShieldCheck className="h-5 w-5" />, bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
+  nda: { icon: <Scale className="h-5 w-5" />, bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-400' },
+  proposal: { icon: <Briefcase className="h-5 w-5" />, bg: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400' },
+  invoice: { icon: <Receipt className="h-5 w-5" />, bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+  hr: { icon: <Heart className="h-5 w-5" />, bg: 'bg-pink-500/10 text-pink-600 dark:text-pink-400' },
+  legal: { icon: <Scale className="h-5 w-5" />, bg: 'bg-red-500/10 text-red-600 dark:text-red-400' },
+  other: { icon: <FileText className="h-5 w-5" />, bg: 'bg-gray-500/10 text-gray-600 dark:text-gray-400' },
+};
+
+// Mock workflow steps for preview dialog
+const mockWorkflowSteps = [
+  { id: 'ws1', label: 'Legal Review', type: 'review' as const, assignee: 'John M.' },
+  { id: 'ws2', label: 'Manager Approval', type: 'approve' as const, assignee: 'Sarah C.' },
+  { id: 'ws3', label: 'Sign', type: 'sign' as const, assignee: 'David K.' },
+];
+
+// Mock recent uses for preview dialog
+const mockRecentUses = [
+  { id: 'ru1', title: 'NDA - Acme Corp', date: '2025-07-08T14:30:00Z' },
+  { id: 'ru2', title: 'NDA - TechStart Inc', date: '2025-07-06T09:30:00Z' },
+  { id: 'ru3', title: 'NDA - DataViz Analytics', date: '2025-07-04T16:00:00Z' },
+];
+
+// Mock template fields for preview dialog
+const mockTemplateFields: Record<string, { label: string; type: string }[]> = {
+  nda: [
+    { label: 'Disclosing Party', type: 'text' },
+    { label: 'Receiving Party', type: 'text' },
+    { label: 'Effective Date', type: 'date' },
+    { label: 'Duration', type: 'text' },
+    { label: 'Governing Law', type: 'dropdown' },
+  ],
+  contract: [
+    { label: 'Party A', type: 'text' },
+    { label: 'Party B', type: 'text' },
+    { label: 'Contract Value', type: 'text' },
+    { label: 'Start Date', type: 'date' },
+    { label: 'End Date', type: 'date' },
+    { label: 'Signature', type: 'signature' },
+  ],
+  hr: [
+    { label: 'Employee Name', type: 'text' },
+    { label: 'Position', type: 'text' },
+    { label: 'Start Date', type: 'date' },
+    { label: 'Salary', type: 'text' },
+    { label: 'Department', type: 'dropdown' },
+  ],
+  agreement: [
+    { label: 'Party Name', type: 'text' },
+    { label: 'Agreement Type', type: 'dropdown' },
+    { label: 'Effective Date', type: 'date' },
+  ],
+  proposal: [
+    { label: 'Client Name', type: 'text' },
+    { label: 'Project Scope', type: 'text' },
+    { label: 'Total Amount', type: 'text' },
+    { label: 'Delivery Date', type: 'date' },
+  ],
+  invoice: [
+    { label: 'Invoice Number', type: 'text' },
+    { label: 'Client', type: 'text' },
+    { label: 'Amount', type: 'text' },
+    { label: 'Due Date', type: 'date' },
+  ],
+  legal: [
+    { label: 'Document Title', type: 'text' },
+    { label: 'Jurisdiction', type: 'dropdown' },
+    { label: 'Filing Date', type: 'date' },
+  ],
+  other: [
+    { label: 'Title', type: 'text' },
+    { label: 'Description', type: 'text' },
+  ],
+};
+
+// Step type icons
+const stepTypeIcons: Record<string, React.ReactNode> = {
+  review: <Eye className="h-3.5 w-3.5" />,
+  approve: <Check className="h-3.5 w-3.5" />,
+  sign: <Pencil className="h-3.5 w-3.5" />,
+  notify: <Zap className="h-3.5 w-3.5" />,
+};
+
+const stepTypeColors: Record<string, string> = {
+  review: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
+  approve: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  sign: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  notify: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+};
+
+// Check if template was created in last 7 days
+function isNewTemplate(createdAt: string): boolean {
+  const created = new Date(createdAt);
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  return created > sevenDaysAgo;
+}
+
+// Enhanced Template Card with all visual improvements
 function EnhancedTemplateCard({
   template,
-  onUse,
+  onPreview,
+  onQuickUse,
 }: {
   template: Template;
-  onUse: () => void;
+  onPreview: () => void;
+  onQuickUse: () => void;
 }) {
   const [isHovered, setIsHovered] = useState(false);
+  const catIcon = categoryIconMap[template.category] || categoryIconMap.other;
+  const borderGradient = categoryBorderGradients[template.category] || categoryBorderGradients.other;
+  const maxUsage = 350; // for popularity bar scaling
+  const popularityPct = Math.min((template.usageCount / maxUsage) * 100, 100);
+  const isNew = isNewTemplate(template.createdAt);
+  const isPopular = template.usageCount > 10;
 
   return (
     <motion.div
@@ -89,30 +233,49 @@ function EnhancedTemplateCard({
       transition={{ duration: 0.2 }}
     >
       <Card
-        className="hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer group"
-        onClick={onUse}
+        className="overflow-hidden transition-all duration-300 cursor-pointer group relative"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <CardContent className="p-4">
-          {/* Template preview */}
-          <div className="bg-muted/30 rounded-lg border border-border h-36 flex items-center justify-center mb-4 relative overflow-hidden">
-            {/* Preview overlay on hover */}
+        {/* Gradient top border */}
+        <div className={`h-1 w-full ${borderGradient}`} />
+
+        <CardContent className="p-4 pt-3">
+          {/* Template preview area */}
+          <div
+            className="bg-muted/30 rounded-lg border border-border h-32 flex items-center justify-center mb-4 relative overflow-hidden"
+            onClick={onPreview}
+          >
+            {/* Hover overlay with Quick Use button */}
             <motion.div
-              className="absolute inset-0 bg-emerald-500/5 backdrop-blur-[2px] flex items-center justify-center"
+              className="absolute inset-0 bg-black/5 dark:bg-white/5 backdrop-blur-[2px] flex items-center justify-center gap-2"
               initial={{ opacity: 0 }}
               animate={{ opacity: isHovered ? 1 : 0 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="flex flex-col items-center gap-2">
-                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 shadow-lg">
-                  <Eye className="mr-1.5 h-3.5 w-3.5" />
-                  Preview
-                </Button>
-              </div>
+              <Button
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 shadow-lg"
+                onClick={(e) => { e.stopPropagation(); onQuickUse(); }}
+              >
+                <Zap className="mr-1.5 h-3.5 w-3.5" />
+                Quick Use
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="shadow-lg"
+                onClick={(e) => { e.stopPropagation(); onPreview(); }}
+              >
+                <Eye className="mr-1.5 h-3.5 w-3.5" />
+                Preview
+              </Button>
             </motion.div>
 
-            <FileText className="h-12 w-12 text-muted-foreground/30" />
+            {/* Template type icon */}
+            <div className={`rounded-xl p-3 ${catIcon.bg}`}>
+              {catIcon.icon}
+            </div>
 
             {/* Category badge */}
             <Badge
@@ -121,8 +284,8 @@ function EnhancedTemplateCard({
               {template.category}
             </Badge>
 
-            {/* Popularity indicator */}
-            {template.usageCount > 100 && (
+            {/* Popular badge */}
+            {isPopular && (
               <div className="absolute top-2 left-2">
                 <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-[9px] border-0">
                   <TrendingUp className="mr-1 h-2.5 w-2.5" />
@@ -130,47 +293,265 @@ function EnhancedTemplateCard({
                 </Badge>
               </div>
             )}
+
+            {/* New badge */}
+            {isNew && (
+              <div className="absolute top-2 left-2">
+                <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[9px] border-0">
+                  <Sparkles className="mr-1 h-2.5 w-2.5" />
+                  New
+                </Badge>
+              </div>
+            )}
           </div>
 
           {/* Info */}
-          <h3 className="text-sm font-medium group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{template.name}</h3>
+          <h3 className="text-sm font-medium group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate">
+            {template.name}
+          </h3>
           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{template.description}</p>
+
+          {/* Usage statistics */}
+          <div className="mt-3 space-y-2">
+            {/* Popularity bar */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  <span>Used {template.usageCount >= 1000 ? `${(template.usageCount / 1000).toFixed(1)}k` : template.usageCount} times</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>{formatDistanceToNow(new Date(template.updatedAt), { addSuffix: false })} ago</span>
+                </div>
+              </div>
+              <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
+                <motion.div
+                  className={`h-full rounded-full ${borderGradient}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${popularityPct}%` }}
+                  transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+                />
+              </div>
+            </div>
+          </div>
 
           {/* Meta */}
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                <span>{template.usageCount >= 1000 ? `${(template.usageCount / 1000).toFixed(1)}k` : template.usageCount} uses</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span>{formatDistanceToNow(new Date(template.updatedAt), { addSuffix: false })}</span>
-              </div>
+            <div className="flex items-center gap-2">
+              <Avatar className="h-5 w-5">
+                <AvatarFallback className="text-[7px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  {template.createdBy.name.split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-[11px] text-muted-foreground">
+                {template.createdBy.name}
+              </span>
             </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              Use <ArrowRight className="ml-1 h-3 w-3" />
-            </Button>
-          </div>
-
-          {/* Creator info */}
-          <div className="flex items-center gap-2 mt-2">
-            <Avatar className="h-5 w-5">
-              <AvatarFallback className="text-[7px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                {template.createdBy.name.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-[11px] text-muted-foreground">
-              by {template.createdBy.name}
-            </span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => { e.stopPropagation(); onQuickUse(); }}
+                  >
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Use template</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </CardContent>
       </Card>
     </motion.div>
+  );
+}
+
+// Template Preview Dialog
+function TemplatePreviewDialog({
+  open,
+  onClose,
+  template,
+  onUse,
+}: {
+  open: boolean;
+  onClose: () => void;
+  template: Template | null;
+  onUse: () => void;
+}) {
+  if (!template) return null;
+
+  const catIcon = categoryIconMap[template.category] || categoryIconMap.other;
+  const borderGradient = categoryBorderGradients[template.category] || categoryBorderGradients.other;
+  const fields = mockTemplateFields[template.category] || mockTemplateFields.other;
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3">
+            <div className={`rounded-lg p-2 ${catIcon.bg}`}>
+              {catIcon.icon}
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                {template.name}
+                <Badge className={`text-[10px] capitalize ${categoryColors[template.category] || categoryColors.other}`}>
+                  {template.category}
+                </Badge>
+                {template.usageCount > 10 && (
+                  <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-[9px] border-0">
+                    <TrendingUp className="mr-1 h-2.5 w-2.5" /> Popular
+                  </Badge>
+                )}
+              </div>
+              <DialogDescription className="mt-1">{template.description}</DialogDescription>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-6 pt-4">
+          {/* Usage Stats Row */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-center">
+              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{template.usageCount}</p>
+              <p className="text-xs text-muted-foreground">Total Uses</p>
+            </div>
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-center">
+              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                {formatDistanceToNow(new Date(template.updatedAt), { addSuffix: false })}
+              </p>
+              <p className="text-xs text-muted-foreground">Last Updated</p>
+            </div>
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-center">
+              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{fields.length}</p>
+              <p className="text-xs text-muted-foreground">Fields</p>
+            </div>
+          </div>
+
+          {/* Fields Section */}
+          <div>
+            <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+              <FileText className="h-4 w-4 text-emerald-500" />
+              Template Fields
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {fields.map((field, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <Badge
+                    variant="outline"
+                    className="px-3 py-1.5 text-xs font-medium gap-1.5"
+                  >
+                    {field.type === 'signature' ? (
+                      <Pencil className="h-3 w-3 text-purple-500" />
+                    ) : field.type === 'date' ? (
+                      <Clock className="h-3 w-3 text-cyan-500" />
+                    ) : field.type === 'dropdown' ? (
+                      <BarChart3 className="h-3 w-3 text-amber-500" />
+                    ) : (
+                      <FileText className="h-3 w-3 text-emerald-500" />
+                    )}
+                    {field.label}
+                    <span className="text-muted-foreground text-[10px]">{field.type}</span>
+                  </Badge>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Workflow Section */}
+          <div>
+            <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+              <ArrowLeftRight className="h-4 w-4 text-emerald-500" />
+              Approval Workflow
+            </h3>
+            <div className="flex items-center gap-1">
+              {mockWorkflowSteps.map((step, i) => (
+                <div key={step.id} className="flex items-center gap-1">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex flex-col items-center"
+                  >
+                    <div className={`rounded-full p-2.5 ${stepTypeColors[step.type]}`}>
+                      {stepTypeIcons[step.type]}
+                    </div>
+                    <p className="text-[10px] font-medium mt-1 text-center max-w-[70px] truncate">{step.label}</p>
+                    <p className="text-[9px] text-muted-foreground">{step.assignee}</p>
+                  </motion.div>
+                  {i < mockWorkflowSteps.length - 1 && (
+                    <div className="flex-shrink-0 px-0.5 mb-6">
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Uses Section */}
+          <div>
+            <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+              <Clock className="h-4 w-4 text-emerald-500" />
+              Recent Uses
+            </h3>
+            <div className="space-y-2">
+              {mockRecentUses.map((use, i) => (
+                <motion.div
+                  key={use.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                  className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="rounded-lg bg-emerald-500/10 p-1.5 shrink-0">
+                    <FileText className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate">{use.title}</p>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground shrink-0">
+                    {formatDistanceToNow(new Date(use.date), { addSuffix: true })}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+              onClick={onUse}
+            >
+              <Zap className="mr-2 h-4 w-4" />
+              Use This Template
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => { toast.info('Template editor would open here'); }}>
+                <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                Edit
+              </Button>
+              <Button variant="outline" onClick={() => { toast.success('Template duplicated!'); }}>
+                <Copy className="mr-1.5 h-3.5 w-3.5" />
+                Duplicate
+              </Button>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -206,6 +587,7 @@ function CreateFromTemplateDialog({
             <Sparkles className="h-5 w-5 text-emerald-500" />
             Create from Template
           </DialogTitle>
+          <DialogDescription>Create a new document using this template</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           {/* Template info */}
@@ -289,12 +671,37 @@ function CreateFromTemplateDialog({
   );
 }
 
+// Skeleton loading for template cards
+function TemplateCardSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="h-1 w-full">
+        <Skeleton className="h-full w-full rounded-none" />
+      </div>
+      <div className="p-4 pt-3 space-y-3">
+        <Skeleton className="h-32 w-full rounded-lg" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-1/2" />
+        <Skeleton className="h-1.5 w-full rounded-full" />
+        <div className="flex items-center justify-between pt-3">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-5 rounded-full" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+          <Skeleton className="h-7 w-7 rounded" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function TemplatesPage() {
   const { navigate } = useAppStore();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<TemplateCategory | 'all'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'usage' | 'updated'>('usage');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
 
   // Fetch templates from API
@@ -343,10 +750,26 @@ export function TemplatesPage() {
     return tpls;
   }, [templates, search, category, sortBy]);
 
+  const handlePreviewTemplate = (template: Template) => {
+    setSelectedTemplate(template);
+    setPreviewDialogOpen(true);
+  };
+
   const handleUseTemplate = (template: Template) => {
     setSelectedTemplate(template);
     setCreateDialogOpen(true);
   };
+
+  // Category counts
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: templates.length };
+    templates.forEach((t) => {
+      counts[t.category] = (counts[t.category] || 0) + 1;
+    });
+    return counts;
+  }, [templates]);
+
+  const activeCategoryData = categories.find(c => c.value === category);
 
   return (
     <div className="space-y-6">
@@ -397,60 +820,86 @@ export function TemplatesPage() {
         )}
       </div>
 
-      {/* Category filter pills - horizontal scrollable */}
+      {/* Category filter pills - horizontal scrollable with gradient highlighting */}
       <div className="relative -mx-6 px-6">
         <ScrollArea className="w-full whitespace-nowrap">
           <div className="flex gap-2 pb-2">
-            {categories.map((cat) => (
-              <Button
-                key={cat.value}
-                variant={category === cat.value ? 'secondary' : 'outline'}
-                size="sm"
-                className={`shrink-0 transition-all duration-200 ${
-                  category === cat.value ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 shadow-sm' : ''
-                }`}
-                onClick={() => setCategory(cat.value)}
-              >
-                {cat.label}
-                {cat.value !== 'all' && (
-                  <Badge variant="outline" className="ml-1.5 h-4 px-1 text-[9px]">
-                    {templates.filter(t => t.category === cat.value).length}
+            {categories.map((cat) => {
+              const isActive = category === cat.value;
+              const count = categoryCounts[cat.value] || 0;
+              return (
+                <Button
+                  key={cat.value}
+                  variant={isActive ? 'secondary' : 'outline'}
+                  size="sm"
+                  className={`shrink-0 transition-all duration-200 ${
+                    isActive
+                      ? 'bg-gradient-to-r text-white shadow-md border-0 ' + cat.gradient
+                      : 'hover:bg-muted/50'
+                  }`}
+                  onClick={() => setCategory(cat.value)}
+                >
+                  {cat.icon}
+                  <span className="ml-1.5">{cat.label}</span>
+                  <Badge
+                    className={`ml-1.5 h-4 px-1 text-[9px] ${
+                      isActive
+                        ? 'bg-white/20 text-white border-white/30'
+                        : ''
+                    }`}
+                    variant={isActive ? 'outline' : 'outline'}
+                  >
+                    {count}
                   </Badge>
-                )}
-              </Button>
-            ))}
+                </Button>
+              );
+            })}
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </div>
 
+      {/* Template Stats Bar */}
+      {!isLoading && filteredTemplates.length > 0 && (
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span>{filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''}</span>
+          <span className="text-border">|</span>
+          <span>Most popular: <strong className="text-foreground">{[...filteredTemplates].sort((a, b) => b.usageCount - a.usageCount)[0]?.name}</strong></span>
+          <span className="text-border">|</span>
+          <span>Total uses: <strong className="text-foreground">{filteredTemplates.reduce((acc, t) => acc + t.usageCount, 0).toLocaleString()}</strong></span>
+        </div>
+      )}
+
       {/* Recently Used section */}
       {filteredTemplates.length > 0 && sortBy === 'usage' && (
         <div>
           <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-            <Clock className="h-4 w-4 text-emerald-500" />
-            Recently Used
+            <Star className="h-4 w-4 text-amber-500" />
+            Most Popular
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            {filteredTemplates.slice(0, 4).map((template) => (
-              <motion.div
-                key={template.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/30 cursor-pointer transition-colors"
-                onClick={() => handleUseTemplate(template)}
-              >
-                <div className="rounded-lg bg-emerald-100 dark:bg-emerald-900/30 p-2 shrink-0">
-                  <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{template.name}</p>
-                  <p className="text-[10px] text-muted-foreground capitalize">{template.category} · {template.usageCount >= 1000 ? `${(template.usageCount / 1000).toFixed(1)}k` : template.usageCount} uses</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-              </motion.div>
-            ))}
+            {filteredTemplates.slice(0, 4).map((template, i) => {
+              const catIcon = categoryIconMap[template.category] || categoryIconMap.other;
+              return (
+                <motion.div
+                  key={template.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: i * 0.05 }}
+                  className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/30 cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5"
+                  onClick={() => handlePreviewTemplate(template)}
+                >
+                  <div className={`rounded-lg p-2 shrink-0 ${catIcon.bg}`}>
+                    {catIcon.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{template.name}</p>
+                    <p className="text-[10px] text-muted-foreground capitalize">{template.category} · {template.usageCount >= 1000 ? `${(template.usageCount / 1000).toFixed(1)}k` : template.usageCount} uses</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </motion.div>
+              );
+            })}
           </div>
           <Separator className="mb-6" />
         </div>
@@ -459,12 +908,10 @@ export function TemplatesPage() {
       {/* Loading state */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="space-y-3">
-              <Skeleton className="h-40 w-full rounded-lg" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
-            </div>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Card key={i} className="overflow-hidden">
+              <TemplateCardSkeleton />
+            </Card>
           ))}
         </div>
       ) : filteredTemplates.length === 0 ? (
@@ -486,12 +933,24 @@ export function TemplatesPage() {
               <EnhancedTemplateCard
                 key={template.id}
                 template={template}
-                onUse={() => handleUseTemplate(template)}
+                onPreview={() => handlePreviewTemplate(template)}
+                onQuickUse={() => handleUseTemplate(template)}
               />
             ))}
           </AnimatePresence>
         </div>
       )}
+
+      {/* Template Preview Dialog */}
+      <TemplatePreviewDialog
+        open={previewDialogOpen}
+        onClose={() => setPreviewDialogOpen(false)}
+        template={selectedTemplate}
+        onUse={() => {
+          setPreviewDialogOpen(false);
+          if (selectedTemplate) handleUseTemplate(selectedTemplate);
+        }}
+      />
 
       {/* Create from template dialog */}
       <CreateFromTemplateDialog

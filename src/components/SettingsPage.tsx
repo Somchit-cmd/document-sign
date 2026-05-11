@@ -77,6 +77,15 @@ function ProfileSettings() {
     },
   });
 
+  const handleRestartTour = () => {
+    try {
+      localStorage.setItem('docsign-onboarding-complete', 'false');
+    } catch {
+      // localStorage not available
+    }
+    window.location.reload();
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -137,6 +146,27 @@ function ProfileSettings() {
               onClick={() => updateMutation.mutate()}
             >
               {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Onboarding</CardTitle>
+          <CardDescription>Manage your tour and tutorial preferences</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Restart Onboarding Tour</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Replay the guided tour to rediscover platform features
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleRestartTour}>
+              <RefreshCw className="mr-2 h-3.5 w-3.5" />
+              Restart Tour
             </Button>
           </div>
         </CardContent>

@@ -5,16 +5,18 @@
 - **Started**: 2025-07-09
 - **Current State**: Full-featured enterprise document signing platform with AI integration, real-time collaboration, professional UX, visual workflow builder, contacts directory, enhanced analytics, reports dashboard, keyboard shortcuts, system configuration, and document detail enhancements
 
-## Current Assessment (QA Round 4)
+## Current Assessment (QA Round 5)
 - **Overall Quality**: VERY HIGH - Professional enterprise-grade UI with premium styling
 - **Lint**: PASSES with 0 errors
-- **All Pages Working**: Login, Dashboard, Inbox, Documents, Document Detail, Contacts, Templates, Workflows, Audit Logs, Reports, Admin (5 tabs), Settings
+- **All Pages Working**: Login, Dashboard, Inbox, Documents, Document Detail, Contacts, Notifications, Templates, Workflows, Audit Logs, Reports, Admin (5 tabs), Settings
 - **Real Data**: All pages connected to live API backend
 - **Dark Mode**: Fully functional with proper contrast and glassmorphism effects
 - **Mobile Responsive**: Sidebar collapses to sheet on mobile, 3-column layouts adapt
 - **Error Boundary**: Global ErrorBoundary wraps all pages to prevent full app crashes
 - **Keyboard Shortcuts**: ⌘/ opens shortcuts panel, G+X navigation, ⌘K search
 - **Styling Enhancements**: Glassmorphism, gradient borders, shimmer animations, premium shadows
+- **Onboarding Tour**: 9-step guided tour for first-time users with auto-navigation
+- **New Pages**: Notification Center, Onboarding Tour
 
 ## Architecture
 - Next.js 16 App Router with client-side SPA routing
@@ -74,6 +76,15 @@
 45. ✅ **NEW** Comments/Activity right panel with emoji reactions, @mentions, nested replies
 46. ✅ **NEW** Document Version History with View/Restore and side-by-side Comparison dialog
 47. ✅ **NEW** Enhanced document toolbar: Download (PDF/Original/Signed), Print, Void, Create Template
+48. ✅ **NEW** Notification Center page with 23 mock notifications, preferences dialog, bulk actions, grouped time display
+49. ✅ **NEW** Onboarding Tour with 9 steps, glassmorphism card, auto-navigation, localStorage persistence
+50. ✅ **NEW** Template Preview Dialog with fields, workflow visualization, recent uses, quick use button
+51. ✅ **NEW** Template category pills with icons, counts, and gradient active state
+52. ✅ **NEW** Template popularity bar, Popular/New badges, gradient top borders per category
+53. ✅ **NEW** Inbox Quick Sign dialog (type/draw modes directly in inbox)
+54. ✅ **NEW** Inbox Delegate dialog with team member selector and reason
+55. ✅ **NEW** Inbox sort options (Priority, Date, Deadline, Sender), sound toggle
+56. ✅ **NEW** Inbox priority-colored left borders, document type icons, estimated time, step progress
 
 ## Critical Bugs Fixed This Round
 1. **PDF Viewer Crash** (CRITICAL): Document detail page crashed when clicking documents because react-pdf tried to load non-existent PDF files (404). Fixed by: (a) Adding ErrorBoundary wrapping the PDF Document component, (b) Detecting `/uploads/` URLs as placeholders since files don't exist on server, (c) Better error handling in PDFViewer
@@ -338,3 +349,148 @@ Unresolved Issues / Next Steps:
 - Could add bulk document operations (bulk sign, bulk void, bulk download)
 - Could add document comparison with real diff engine
 - Could add real-time co-authoring with operational transforms
+
+---
+Task ID: 4
+Agent: Onboarding Tour Developer
+Task: Create an Onboarding Tour component that guides first-time users through the platform
+
+Work Log:
+- Created `/home/z/my-project/src/components/OnboardingTour.tsx` - a comprehensive multi-step guided tour component
+- 9 total steps: Welcome, Dashboard, Inbox, Documents, Templates, Workflows, Reports, Keyboard Shortcuts, Completion
+- Modal overlay approach with semi-transparent dark overlay and backdrop-blur effect
+- Glassmorphism floating card with gradient top bar (emerald/teal/cyan)
+- Each content step has: step number badge, emoji visual anchor, lucide-react icon, title with gradient text, description, feature checklist with animated entries
+- Progress bar with gradient indicator showing tour completion percentage
+- Step indicator dots at bottom of content steps (active dot wider with gradient, completed dots solid, upcoming dots faded)
+- Animated transitions between steps using framer-motion AnimatePresence (fade + slide + scale)
+- Spotlight pulse effect on top/bottom edges during content steps
+- Card positions vary by step to avoid monotony (left, center, right, top, bottom)
+- Welcome step: "Start Tour" / "Skip for now" buttons
+- Content steps: "Back" / "Next" buttons with emerald gradient
+- Completion step: Checklist of explored areas + "Go to Dashboard" button
+- "Skip Tour" button always visible in top-right corner of overlay
+- State management: localStorage key `docsign-onboarding-complete` tracks tour completion
+- Tour auto-shows with 800ms delay after login if not completed before
+- Tour navigates to target pages when steps change (dashboard, inbox, documents, templates, workflow-builder, reports)
+- Responsive: mobile-friendly card sizing (340px mobile, 420px desktop)
+- Dark mode compatible throughout
+- Updated `/home/z/my-project/src/app/page.tsx`: Imported OnboardingTour, rendered inside AppLayout outside ErrorBoundary at z-[100]
+- Updated `/home/z/my-project/src/components/SettingsPage.tsx`: Added "Onboarding" card in Profile section with "Restart Onboarding Tour" button (sets localStorage to false, reloads page)
+- No new packages installed
+- No existing business logic modified
+- Lint passes with 0 errors
+
+Stage Summary:
+- New OnboardingTour component with 9-step guided tour
+- Glassmorphism card design with emerald/teal/cyan gradient accents
+- Framer-motion animations for all transitions
+- localStorage persistence for tour completion state
+- Auto-navigation to relevant pages during tour
+- "Restart Tour" option in Settings > Profile
+- 48 total features across the platform
+
+---
+Task ID: 3
+Agent: Notification Center Developer
+Task: Create comprehensive Notification Center page with full notification management features
+
+Work Log:
+- Created `/home/z/my-project/src/components/NotificationCenterPage.tsx` with comprehensive notification management UI
+- Page Header: "Notification Center" title with Mark All Read button, Select mode toggle, Preferences gear icon button
+- Notification Preferences Dialog: Full modal with Email toggles (5 categories), In-App toggles (5 categories), Digest Frequency selector (Real-time/Hourly/Daily/Weekly), Quiet Hours settings with start/end time pickers and enable/disable toggle, Save button with toast
+- Notification Statistics: 4 stat cards at top (Total with Bell icon, Unread with pulsing badge, Action Required/Urgent with destructive badge, This Week with mini sparkline chart)
+- Filter Bar: Search input with clear button, Category filter pills (Documents, Signatures, Workflows, System, Mentions) as toggleable buttons, Tab navigation (All, Unread, Documents, Signatures, Workflows, System, Mentions)
+- Notification List: Rich notification cards with category-colored left border (blue/emerald/amber/slate/purple), category icon, unread indicator (blue pulsing dot + bold text), type icon (info/success/warning/error), sender avatar, relative timestamps via date-fns, hover-revealed action buttons (View/ExternalLink, Mark Read, Dismiss/Trash)
+- Grouped Display: Notifications grouped by time period (Just Now <5min, Today, Yesterday, Earlier this week, Older) with group headers and counts
+- Bulk Actions: Select mode with checkboxes, Select All/Deselect All, Mark Selected as Read, Dismiss Selected, selected count display
+- Empty State: Beautiful empty state with large Bell icon, contextual messages based on active filters, Clear filters button
+- 23 mock notifications across all categories with realistic enterprise scenarios
+- Framer Motion: Staggered fade-in animations for notification cards, stat cards, AnimatePresence for bulk actions bar, smooth transitions for preferences quiet hours
+- Updated `page.tsx`: Added NotificationCenterPage import and 'notifications' case in switch statement
+- Updated `AppSidebar.tsx`: Added Bell icon import and Notifications nav item in Main group after Contacts
+- Dark mode compatible throughout
+- Responsive design (mobile-friendly grid layouts, flex-wrap filters)
+- All lint checks pass with 0 errors
+
+Stage Summary:
+- New Notification Center page with full notification management features
+- 23 mock notifications, 5 categories, grouped time display, preferences dialog
+- Statistics cards with mini sparkline, bulk actions, search and filter
+- Sidebar updated with Notifications navigation item
+- 48+ features now complete across the platform
+
+---
+Task ID: 5
+Agent: Templates & Inbox Enhancement Developer
+Task: Enhance Templates page and Inbox page with better visuals and features
+
+Work Log:
+- Enhanced TemplatesPage.tsx:
+  - Added Template Preview Dialog: when clicking a template card, shows a large preview with template name, description, category, usage stats (total uses, last updated, fields count), Fields section showing template variables as pills/badges with type-specific icons (signature/date/dropdown/text), Workflow section showing approval chain as step bubbles connected by arrows with step type icons and colors, Recent Uses section showing last 3 documents created from template with dates, "Use This Template" prominent button, "Edit Template" and "Duplicate" secondary buttons
+  - Enhanced Template Categories sidebar/pills: 9 categories (All, Contracts, Agreements, NDAs, Proposals, Finance, HR, Legal, Custom) with category-specific icons and gradient colors, count badge on each category pill, active category highlighted with gradient background and white text, smooth transitions between categories
+  - Added template usage statistics: "Used X times" on each card, "Last used Y ago" time display, animated mini popularity bar (colored gradient based on category, animates on mount), template stats bar showing total count, most popular template, and total uses
+  - Better card design: gradient top border per category (each category gets unique color), template type icon with category-specific colored background (contract→teal, nda→purple, hr→pink, etc.), hover effect shows "Quick Use" and "Preview" buttons overlay, "Popular" badge for templates used > 10 times, "New" badge with sparkle icon for templates created in last 7 days, creator info at bottom with avatar
+  - Better empty state with templates variant
+  - Enhanced skeleton loading states matching new card layout (includes gradient top border skeleton, popularity bar skeleton)
+  - Added Template Stats Bar showing total templates, most popular, total uses
+  - Replaced "Recently Used" section with "Most Popular" section with star icon and hover effects on cards
+
+- Enhanced InboxPage.tsx:
+  - Added "Quick Sign" button on each approval card: opens compact signature dialog directly in inbox without navigating away, supports type and draw modes, typed name renders in italic emerald "signature" preview, sign button disabled until name entered in type mode
+  - Added "Delegate" button with delegate dialog: select from list of 5 team members with avatar and department info, reason textarea required, amber-themed delegate button, success toast notification
+  - Added notification sound toggle: Volume2/VolumeX icon button in header, toggles state with toast feedback
+  - Added "Sort by" option: Priority (urgent→high→normal→low), Date Received (newest first), Deadline (earliest first), Sender (alphabetical), sorts apply to all tab views
+  - Better card design with colored left border based on priority: urgent=red, high=amber, normal=emerald, low=gray
+  - Document type icon with colored background: NDA→purple, Contract→teal, Employment→pink, Default→emerald (based on title keyword matching)
+  - Added estimated time to complete for each action: "~2 min to sign" for signature docs, "~1 min to review" for others, shown as dashed border badge with clock icon
+  - Progress indicator for multi-step approvals: "Step 2 of 3 · 1/3 signed" format alongside progress bar
+  - Better hover effects: subtle scale(1.005) + shadow-lg + translateY(-0.5) on hover
+  - Improved urgent section header: animated warning icon (rotating 15° back and forth with repeat delay), gradient line separator from amber to transparent
+  - Added "New" badge for notifications received in the last hour: sparkle icon with emerald background, subtle pulse animation
+  - All sorting uses useMemo for performance
+
+- Both pages maintain dark mode compatibility, responsive design, and all existing functionality
+- No new dependencies added
+- Lint passes with 0 errors
+
+Stage Summary:
+- TemplatesPage enhanced with Template Preview Dialog, category gradient pills, usage statistics, popularity bar, gradient top borders, type-specific icons, Popular/New badges, skeleton loading
+- InboxPage enhanced with Quick Sign dialog, Delegate dialog, sound toggle, sort by options, priority left borders, document type icons, estimated time, step progress indicator, animated urgent header, New badge
+- All existing functionality preserved
+- 50+ features now complete across the platform
+
+---
+Task ID: qa-round-5
+Agent: Main Development Agent
+Task: QA Round 5 - Assessment, feature development, and styling improvements
+
+Work Log:
+- Performed comprehensive QA with agent-browser across all pages
+- Initial QA confirmed: zero errors, zero console errors across Login, Dashboard, Inbox, Documents, Contacts, Templates, Workflows, Audit Logs, Reports, Admin, Settings
+- Lint passes with 0 errors
+- Platform is stable - no bugs found
+- Launched 3 parallel development agents for new features and enhancements
+- Agent 3 (Notification Center): Created NotificationCenterPage.tsx with 23 mock notifications, preferences dialog, bulk actions, grouped time display, statistics cards, filter tabs, search, empty state. Updated page.tsx and AppSidebar.tsx
+- Agent 4 (Onboarding Tour): Created OnboardingTour.tsx with 9-step guided tour, glassmorphism card, framer-motion animations, auto-navigation to target pages, localStorage persistence, skip/restart functionality. Updated page.tsx and SettingsPage.tsx
+- Agent 5 (Templates & Inbox): Enhanced TemplatesPage with Preview Dialog, category gradient pills, usage statistics, popularity bar, Popular/New badges, gradient top borders. Enhanced InboxPage with Quick Sign dialog, Delegate dialog, sort options, priority left borders, document type icons, estimated time, step progress indicator, sound toggle
+- Final QA: All new pages working (Notifications, Onboarding Tour), enhanced pages verified (Templates, Inbox), zero errors
+
+Stage Summary:
+- 3 new major features added: Notification Center, Onboarding Tour, Template Preview Dialog
+- 2 pages significantly enhanced: Templates (preview dialog, category pills, usage stats), Inbox (Quick Sign, Delegate, sort, priority borders)
+- 56 total features across the platform
+- Zero runtime errors across all pages
+- Professional enterprise-grade UI with premium styling
+
+Unresolved Issues / Next Steps:
+- Could add PWA manifest and service worker for offline support
+- Could add real email notifications integration (SendGrid/Mailgun)
+- Could add real file storage integration (S3/MinIO)
+- Could add full-text search with Prisma
+- Could add PDF annotation/markup tools
+- Could add bulk document operations (bulk sign, bulk void, bulk download)
+- Could add document comparison with real diff engine
+- Could add real-time co-authoring with operational transforms
+- Could add advanced document search with filters and full-text
+- Could add custom dashboard widgets/configurable layout

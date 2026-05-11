@@ -20,8 +20,10 @@ import { WorkflowBuilderPage } from '@/components/WorkflowBuilderPage';
 import { AIAssistant } from '@/components/AIAssistant';
 import { ContactsPage } from '@/components/ContactsPage';
 import { ReportsPage } from '@/components/ReportsPage';
+import { NotificationCenterPage } from '@/components/NotificationCenterPage';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { KeyboardShortcutsDialog } from '@/components/KeyboardShortcutsDialog';
+import { OnboardingTour } from '@/components/OnboardingTour';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -130,6 +132,8 @@ function AppContent() {
         return <ContactsPage />;
       case 'reports':
         return <ReportsPage />;
+      case 'notifications':
+        return <NotificationCenterPage />;
       case 'admin':
         return <AdminPage />;
       case 'settings':
@@ -152,6 +156,7 @@ function AppContent() {
         <AIAssistant />
       </ErrorBoundary>
       <KeyboardShortcutsDialog />
+      <OnboardingTour />
     </AppLayout>
   );
 }
