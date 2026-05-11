@@ -125,8 +125,20 @@ function ApprovalCard({
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className={`card-hover-lift group ${isUrgent ? 'border-amber-200 dark:border-amber-900/50' : ''} ${selected ? 'ring-2 ring-primary' : ''}`}>
-        <CardContent className="p-4">
+      <Card className={`group transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${isUrgent ? 'border-amber-200 dark:border-amber-900/50' : ''} ${selected ? 'ring-2 ring-emerald-500/50' : ''}`}>
+        <CardContent className="p-4 relative">
+          {/* Urgency indicator - pulsing dot */}
+          {document.priority === 'urgent' && (
+            <motion.div
+              className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-red-500"
+              animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          )}
+          {/* Swipe hint for mobile */}
+          <div className="sm:hidden absolute top-1/2 -translate-y-1/2 -right-1 opacity-30">
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </div>
           <div className="flex items-start gap-3">
             {/* Selection checkbox */}
             <div className="pt-1" onClick={(e) => e.stopPropagation()}>

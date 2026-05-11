@@ -14,6 +14,8 @@ interface StatCardProps {
   className?: string;
   variant?: 'default' | 'emerald' | 'teal' | 'cyan' | 'amber';
   sparklineData?: number[];
+  viewDetailsHref?: string;
+  onViewDetails?: () => void;
 }
 
 // Mini sparkline component
@@ -113,7 +115,7 @@ const variantStyles: Record<string, { gradient: string; iconBg: string; border: 
   },
 };
 
-export function StatCard({ title, value, trend, icon, className, variant = 'default', sparklineData }: StatCardProps) {
+export function StatCard({ title, value, trend, icon, className, variant = 'default', sparklineData, viewDetailsHref, onViewDetails }: StatCardProps) {
   const isPositive = trend && trend > 0;
   const styles = variantStyles[variant] || variantStyles.default;
 
@@ -180,6 +182,22 @@ export function StatCard({ title, value, trend, icon, className, variant = 'defa
               <MiniSparkline data={defaultSparkline} color={styles.sparkColor} />
             </div>
           </div>
+          {(viewDetailsHref || onViewDetails) && (
+            <div className="mt-3 pt-3 border-t border-border/50">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewDetails?.();
+                }}
+                className="text-xs font-medium text-primary/70 hover:text-primary transition-colors flex items-center gap-1"
+              >
+                View Details
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>

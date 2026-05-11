@@ -16,7 +16,10 @@ import { TemplatesPage } from '@/components/TemplatesPage';
 import { AuditLogsPage } from '@/components/AuditLogsPage';
 import { AdminPage } from '@/components/AdminPage';
 import { SettingsPage } from '@/components/SettingsPage';
+import { WorkflowBuilderPage } from '@/components/WorkflowBuilderPage';
 import { AIAssistant } from '@/components/AIAssistant';
+import { ContactsPage } from '@/components/ContactsPage';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,10 +57,14 @@ function AppContent() {
         return <TemplatesPage />;
       case 'audit-logs':
         return <AuditLogsPage />;
+      case 'contacts':
+        return <ContactsPage />;
       case 'admin':
         return <AdminPage />;
       case 'settings':
         return <SettingsPage />;
+      case 'workflow-builder':
+        return <WorkflowBuilderPage />;
       default:
         return <DashboardPage />;
     }
@@ -65,10 +72,14 @@ function AppContent() {
 
   return (
     <AppLayout>
-      <PageTransition pageKey={currentPage}>
-        {renderPage()}
-      </PageTransition>
-      <AIAssistant />
+      <ErrorBoundary key={currentPage}>
+        <PageTransition pageKey={currentPage}>
+          {renderPage()}
+        </PageTransition>
+      </ErrorBoundary>
+      <ErrorBoundary>
+        <AIAssistant />
+      </ErrorBoundary>
     </AppLayout>
   );
 }

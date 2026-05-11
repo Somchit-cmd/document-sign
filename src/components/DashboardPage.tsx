@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAppStore } from '@/lib/store';
 import { api, mockDashboardStats, mockActivity, mockDocuments } from '@/lib/api';
@@ -12,7 +13,6 @@ import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import {
   FileText,
   FileSignature,
@@ -25,6 +25,14 @@ import {
   ArrowRight,
   Clock,
   Sparkles,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  Timer,
+  Activity,
+  Zap,
+  Calendar,
+  Bell,
 } from 'lucide-react';
 import {
   BarChart,
@@ -40,7 +48,11 @@ import {
   Legend,
 } from 'recharts';
 import { motion } from 'framer-motion';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, differenceInHours, differenceInDays, format } from 'date-fns';
+
+// ============================================================
+// Mock Data for New Sections
+// ============================================================
 
 const monthlyData = [
   { name: 'Feb', created: 65, completed: 45 },
@@ -57,6 +69,119 @@ const defaultStatusData = [
   { name: 'Sent', value: 18, color: '#06b6d4' },
   { name: 'Draft', value: 12, color: '#94a3b8' },
   { name: 'Rejected', value: 5, color: '#ef4444' },
+];
+
+// Signing Analytics mock data
+const signingAnalytics = {
+  avgSigningTime: 2.3, // days
+  avgSigningTimeTrend: -12, // negative = improvement (faster)
+  completionRate: 87, // percentage
+  completionRateTrend: 5.2,
+  weeklyComparison: [
+    { week: 'This Week', avg: 2.1 },
+    { week: 'Last Week', avg: 2.8 },
+    { week: '2 Weeks Ago', avg: 3.2 },
+  ],
+};
+
+// Expiring soon documents
+const now = new Date();
+const expiringSoonDocs = [
+  {
+    id: 'doc-exp-1',
+    title: 'Enterprise License Agreement',
+    expiresAt: new Date(now.getTime() + 18 * 60 * 60 * 1000).toISOString(), // 18h from now
+    signer: 'David Kim',
+  },
+  {
+    id: 'doc-exp-2',
+    title: 'Employment Agreement - M. Torres',
+    expiresAt: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days
+    signer: 'Sarah Chen',
+  },
+  {
+    id: 'doc-exp-3',
+    title: 'Vendor Agreement - CloudSync',
+    expiresAt: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days
+    signer: 'John Martinez',
+  },
+  {
+    id: 'doc-exp-4',
+    title: 'Partnership MOU - DataViz',
+    expiresAt: new Date(now.getTime() + 6.5 * 24 * 60 * 60 * 1000).toISOString(), // 6.5 days
+    signer: 'Emily Watson',
+  },
+];
+
+// Weekly Activity Heatmap mock data (7 days x 24 hours)
+const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const hourLabels = ['9am', '10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm'];
+const heatmapData = dayLabels.map((day, dayIdx) =>
+  hourLabels.map((hour, hourIdx) => ({
+    day,
+    dayIdx,
+    hour,
+    hourIdx,
+    value: Math.floor(
+      // Simulate realistic activity patterns: higher mid-week, mid-day
+      (Math.sin((dayIdx / 7) * Math.PI) * 3 +
+        Math.sin((hourIdx / 9) * Math.PI) * 4 +
+        Math.random() * 2) *
+        2
+    ),
+  }))
+);
+
+// Deadline Tracker mock data
+const deadlineData = [
+  {
+    id: 'dl-1',
+    title: 'Enterprise License Agreement',
+    deadline: new Date(now.getTime() + 18 * 60 * 60 * 1000).toISOString(),
+    assignedTo: 'David Kim',
+    priority: 'urgent' as const,
+    docId: 'doc-1',
+  },
+  {
+    id: 'dl-2',
+    title: 'Employment Agreement',
+    deadline: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    assignedTo: 'Sarah Chen',
+    priority: 'high' as const,
+    docId: 'doc-4',
+  },
+  {
+    id: 'dl-3',
+    title: 'Vendor Agreement - CloudSync',
+    deadline: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+    assignedTo: 'John Martinez',
+    priority: 'normal' as const,
+    docId: 'doc-5',
+  },
+  {
+    id: 'dl-4',
+    title: 'Partnership MOU',
+    deadline: new Date(now.getTime() + 6.5 * 24 * 60 * 60 * 1000).toISOString(),
+    assignedTo: 'Emily Watson',
+    priority: 'low' as const,
+    docId: 'doc-6',
+  },
+  {
+    id: 'dl-5',
+    title: 'Sales Contract - Global Logistics',
+    deadline: new Date(now.getTime() + 12 * 24 * 60 * 60 * 1000).toISOString(),
+    assignedTo: 'Lisa Park',
+    priority: 'normal' as const,
+    docId: 'doc-3',
+  },
+  {
+    id: 'dl-6',
+    title: 'NDA - TechStart Inc',
+    deadline: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000).toISOString(), // overdue
+    assignedTo: 'Mike Johnson',
+    priority: 'urgent' as const,
+    docId: 'doc-2',
+  },
 ];
 
 // Quick Actions configuration
@@ -93,13 +218,155 @@ const quickActions = [
     label: 'View Inbox',
     description: 'Pending approvals',
     icon: Inbox,
-    color: 'from-amber-500 to-orange-600',
     bgColor: 'bg-amber-50 dark:bg-amber-950/30',
+    color: 'from-amber-500 to-orange-600',
     page: 'inbox' as const,
   },
 ];
 
-// Team Activity item
+// ============================================================
+// Helper: Animated Counter Component
+// ============================================================
+
+function AnimatedValue({ value, suffix = '', decimals = 0 }: { value: number; suffix?: string; decimals?: number }) {
+  const [display, setDisplay] = useState(0);
+  const duration = 1200;
+
+  useEffect(() => {
+    let startTime: number | null = null;
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(value * eased);
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [value]);
+
+  return (
+    <span>
+      {display.toFixed(decimals)}
+      {suffix}
+    </span>
+  );
+}
+
+// ============================================================
+// Helper: Circular Progress (Completion Rate)
+// ============================================================
+
+function CircularProgress({ value, size = 120, strokeWidth = 10 }: { value: number; size?: number; strokeWidth?: number }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (value / 100) * circumference;
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          className="text-muted/20"
+        />
+        <motion.circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="url(#completionGradient)"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 1.5, ease: 'easeOut', delay: 0.5 }}
+        />
+        <defs>
+          <linearGradient id="completionGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#10b981" />
+            <stop offset="100%" stopColor="#06b6d4" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <motion.span
+          className="text-2xl font-bold"
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.8, duration: 0.4 }}
+        >
+          <AnimatedValue value={value} suffix="%" decimals={0} />
+        </motion.span>
+        <span className="text-[10px] text-muted-foreground">Completion</span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Helper: Heatmap Cell
+// ============================================================
+
+function HeatmapCell({ value, maxVal }: { value: number; maxVal: number }) {
+  const intensity = Math.max(0, Math.min(1, value / maxVal));
+  const bgColor =
+    intensity === 0
+      ? 'bg-muted/20'
+      : intensity < 0.25
+        ? 'bg-emerald-100 dark:bg-emerald-900/30'
+        : intensity < 0.5
+          ? 'bg-emerald-300 dark:bg-emerald-700/50'
+          : intensity < 0.75
+            ? 'bg-emerald-500 dark:bg-emerald-600/70'
+            : 'bg-emerald-700 dark:bg-emerald-500';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.2 }}
+      className={`w-7 h-7 rounded-sm ${bgColor} transition-colors`}
+      title={`${value} activities`}
+    />
+  );
+}
+
+// ============================================================
+// Helper: Urgency Color for Expiring Documents
+// ============================================================
+
+function getUrgencyStyle(expiresAt: string) {
+  const hours = differenceInHours(new Date(expiresAt), now);
+  if (hours < 24) return { color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-900/50', label: 'critical' };
+  if (hours < 72) return { color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-200 dark:border-amber-900/50', label: 'urgent' };
+  return { color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-200 dark:border-emerald-900/50', label: 'soon' };
+}
+
+function getDeadlineBorderStyle(deadline: string) {
+  const hours = differenceInHours(new Date(deadline), now);
+  if (hours < 0) return 'border-l-red-500'; // overdue
+  if (hours < 24) return 'border-l-amber-500'; // due today
+  if (hours < 168) return 'border-l-yellow-500'; // this week
+  return 'border-l-emerald-500'; // later
+}
+
+function getCountdownText(deadline: string) {
+  const hours = differenceInHours(new Date(deadline), now);
+  if (hours < 0) return { text: 'Overdue', isOverdue: true };
+  if (hours < 24) return { text: `${hours}h remaining`, isOverdue: false };
+  const days = differenceInDays(new Date(deadline), now);
+  return { text: `${days}d remaining`, isOverdue: false };
+}
+
+// ============================================================
+// Helper: Team Activity Item
+// ============================================================
+
 function TeamActivityItem({ name, action, target, time, avatar }: {
   name: string;
   action: string;
@@ -130,8 +397,36 @@ function TeamActivityItem({ name, action, target, time, avatar }: {
   );
 }
 
+// ============================================================
+// Staggered container animation variants
+// ============================================================
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+};
+
+// ============================================================
+// Main Dashboard Page
+// ============================================================
+
 export function DashboardPage() {
   const { navigate, user } = useAppStore();
+  const [currentTime, setCurrentTime] = useState(now);
+
+  // Update current time every minute for countdown accuracy
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch dashboard stats
   const { data: statsData, isLoading: statsLoading } = useQuery({
@@ -177,15 +472,35 @@ export function DashboardPage() {
     staleTime: 30 * 1000,
   });
 
+  // Fetch unread notifications count
+  const { data: unreadData } = useQuery({
+    queryKey: ['unread-count'],
+    queryFn: async () => {
+      const res = await api.getUnreadCount();
+      if (res.success && res.data) return res.data.count;
+      return 5;
+    },
+    staleTime: 30 * 1000,
+  });
+
   const stats: DashboardStats = statsData || mockDashboardStats;
   const activities: ActivityItem[] = activityData || mockActivity;
   const pendingDocs: Document[] = pendingDocsData || mockDocuments.filter(
     (d) => d.status === 'sent' || d.status === 'viewed'
   );
   const recentDocs: Document[] = recentDocsData || mockDocuments.slice(0, 8);
+  const unreadCount = unreadData || 5;
 
   // Build status data from stats if available
   const statusData = defaultStatusData;
+
+  // Quick Stats data
+  const quickStatsItems = useMemo(() => [
+    { icon: FileText, label: 'docs created today', value: 7, color: 'text-emerald-600 dark:text-emerald-400' },
+    { icon: FileSignature, label: 'signatures today', value: 12, color: 'text-teal-600 dark:text-teal-400' },
+    { icon: Timer, label: 'avg turnaround', value: '2.3 days', color: 'text-cyan-600 dark:text-cyan-400' },
+    { icon: Bell, label: 'unread notifications', value: unreadCount, color: 'text-amber-600 dark:text-amber-400' },
+  ], [unreadCount]);
 
   // Mock team activity data
   const teamActivity = [
@@ -195,6 +510,12 @@ export function DashboardPage() {
     { name: 'Alex Kim', action: 'viewed', target: 'Partnership Proposal', time: '2h ago', avatar: 'AK' },
     { name: 'Lisa Wang', action: 'rejected', target: 'Lease Agreement', time: '3h ago', avatar: 'LW' },
   ];
+
+  // Heatmap max value for intensity calculation
+  const heatmapMax = useMemo(
+    () => Math.max(...heatmapData.flat().map((d) => d.value), 1),
+    []
+  );
 
   return (
     <div className="space-y-6">
@@ -225,7 +546,37 @@ export function DashboardPage() {
         </div>
       </motion.div>
 
-      {/* Stat Cards */}
+      {/* Quick Stats Summary Bar */}
+      <motion.div
+        initial={{ opacity: 0, y: -5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.3 }}
+        className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-cyan-50/80 dark:from-emerald-950/20 dark:via-teal-950/10 dark:to-cyan-950/20 border border-emerald-200/50 dark:border-emerald-900/30"
+      >
+        {quickStatsItems.map((item, i) => {
+          const Icon = item.icon;
+          return (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.15 + i * 0.08, duration: 0.3 }}
+              className="flex items-center gap-2"
+            >
+              <Icon className={`h-4 w-4 ${item.color}`} />
+              <span className="text-sm">
+                <span className="font-semibold">{typeof item.value === 'number' ? <AnimatedValue value={item.value} /> : item.value}</span>{' '}
+                <span className="text-muted-foreground text-xs">{item.label}</span>
+              </span>
+              {i < quickStatsItems.length - 1 && (
+                <span className="hidden sm:inline text-border ml-2">|</span>
+              )}
+            </motion.div>
+          );
+        })}
+      </motion.div>
+
+      {/* Stat Cards with View Details */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statsLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
@@ -245,6 +596,8 @@ export function DashboardPage() {
               trend={stats.documentsTrend}
               icon={<FileText className="h-5 w-5" />}
               variant="emerald"
+              sparklineData={[65, 72, 68, 80, 75, 90, 85]}
+              onViewDetails={() => navigate('documents')}
             />
             <StatCard
               title="Pending Signatures"
@@ -252,6 +605,8 @@ export function DashboardPage() {
               trend={stats.signaturesTrend}
               icon={<FileSignature className="h-5 w-5" />}
               variant="teal"
+              sparklineData={[12, 15, 10, 18, 14, 11, 16]}
+              onViewDetails={() => navigate('inbox')}
             />
             <StatCard
               title="Pending Approvals"
@@ -259,6 +614,8 @@ export function DashboardPage() {
               trend={stats.approvalsTrend}
               icon={<ShieldCheck className="h-5 w-5" />}
               variant="cyan"
+              sparklineData={[8, 10, 6, 12, 9, 7, 11]}
+              onViewDetails={() => navigate('inbox')}
             />
             <StatCard
               title="Completed This Month"
@@ -266,6 +623,8 @@ export function DashboardPage() {
               trend={stats.completedTrend}
               icon={<CheckCircle2 className="h-5 w-5" />}
               variant="amber"
+              sparklineData={[20, 25, 22, 30, 28, 35, 32]}
+              onViewDetails={() => navigate('documents')}
             />
           </>
         )}
@@ -346,6 +705,77 @@ export function DashboardPage() {
               </button>
             </motion.div>
           ))}
+        </div>
+      </motion.div>
+
+      {/* Deadline Tracker Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, duration: 0.4 }}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-primary" />
+            Deadline Tracker
+          </h2>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('documents')}>
+            View all <ArrowRight className="ml-1 h-3 w-3" />
+          </Button>
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
+          {deadlineData.map((dl, i) => {
+            const countdown = getCountdownText(dl.deadline);
+            const borderClass = getDeadlineBorderStyle(dl.deadline);
+            const isOverdue = countdown.isOverdue;
+            const isUrgent = !isOverdue && differenceInHours(new Date(dl.deadline), currentTime) < 24;
+
+            return (
+              <motion.div
+                key={dl.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 + i * 0.06, duration: 0.3 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                className="shrink-0 w-56"
+              >
+                <button
+                  onClick={() => navigate('document-detail', { id: dl.docId })}
+                  className={`w-full text-left rounded-xl border-l-4 ${borderClass} border border-border bg-card p-4 hover:shadow-md transition-all group`}
+                >
+                  <p className="text-sm font-medium truncate group-hover:text-primary transition-colors mb-1">
+                    {dl.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {format(new Date(dl.deadline), 'MMM d, yyyy')}
+                  </p>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-muted-foreground">{dl.assignedTo}</span>
+                    <PriorityBadge priority={dl.priority} />
+                  </div>
+                  <motion.div
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                      isOverdue
+                        ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400'
+                        : isUrgent
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                          : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                    }`}
+                    {...(isOverdue || isUrgent ? {
+                      animate: { scale: [1, 1.05, 1] },
+                      transition: { duration: 2, repeat: Infinity },
+                    } : {})}
+                  >
+                    {isOverdue && <AlertTriangle className="h-3 w-3" />}
+                    {isUrgent && !isOverdue && <Zap className="h-3 w-3" />}
+                    {!isUrgent && !isOverdue && <Clock className="h-3 w-3" />}
+                    {countdown.text}
+                  </motion.div>
+                </button>
+              </motion.div>
+            );
+          })}
         </div>
       </motion.div>
 
@@ -440,13 +870,188 @@ export function DashboardPage() {
         </motion.div>
       </div>
 
+      {/* Signing Analytics Section */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+          <Activity className="h-4 w-4 text-primary" />
+          Signing Analytics
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Average Signing Time Card */}
+          <motion.div variants={itemVariants}>
+            <Card className="border-border overflow-hidden h-full bg-gradient-to-br from-teal-50/80 to-card dark:from-teal-950/20 dark:to-card border-teal-200/50 dark:border-teal-900/30">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-muted-foreground">Avg Signing Time</p>
+                  <div className="rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 p-2 text-white">
+                    <Timer className="h-4 w-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold tracking-tight">
+                    <AnimatedValue value={signingAnalytics.avgSigningTime} decimals={1} />
+                  </span>
+                  <span className="text-sm text-muted-foreground">days</span>
+                </div>
+                <div className="flex items-center gap-1 mt-2">
+                  {signingAnalytics.avgSigningTimeTrend < 0 ? (
+                    <>
+                      <TrendingDown className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        {Math.abs(signingAnalytics.avgSigningTimeTrend)}% faster
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <TrendingUp className="h-3 w-3 text-red-600 dark:text-red-400" />
+                      <span className="text-xs font-medium text-red-600 dark:text-red-400">
+                        {signingAnalytics.avgSigningTimeTrend}% slower
+                      </span>
+                    </>
+                  )}
+                  <span className="text-[10px] text-muted-foreground">vs last week</span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Completion Rate Card */}
+          <motion.div variants={itemVariants}>
+            <Card className="border-border overflow-hidden h-full bg-gradient-to-br from-emerald-50/80 to-card dark:from-emerald-950/20 dark:to-card border-emerald-200/50 dark:border-emerald-900/30">
+              <CardContent className="p-5 flex flex-col items-center justify-center">
+                <p className="text-sm font-medium text-muted-foreground mb-2">Completion Rate</p>
+                <CircularProgress value={signingAnalytics.completionRate} size={120} strokeWidth={10} />
+                <div className="flex items-center gap-1 mt-2">
+                  <TrendingUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    +{signingAnalytics.completionRateTrend}% from last month
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Expiring Soon Card */}
+          <motion.div variants={itemVariants} className="sm:col-span-2">
+            <Card className="border-border overflow-hidden h-full">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  Expiring Soon
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-44 overflow-y-auto">
+                  {expiringSoonDocs.map((doc, i) => {
+                    const urgency = getUrgencyStyle(doc.expiresAt);
+                    const hours = differenceInHours(new Date(doc.expiresAt), currentTime);
+                    const timeLabel =
+                      hours < 24
+                        ? `${hours}h remaining`
+                        : `${differenceInDays(new Date(doc.expiresAt), currentTime)}d remaining`;
+                    const isCritical = hours < 24;
+
+                    return (
+                      <motion.button
+                        key={doc.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05, duration: 0.2 }}
+                        onClick={() => navigate('document-detail', { id: doc.id })}
+                        className={`flex items-center gap-3 w-full text-left p-2.5 rounded-lg border ${urgency.border} ${urgency.bg} hover:shadow-sm transition-all group`}
+                      >
+                        <div className={`shrink-0 rounded-md p-1.5 ${urgency.bg}`}>
+                          {isCritical ? (
+                            <motion.div
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{ duration: 1.5, repeat: Infinity }}
+                            >
+                              <AlertTriangle className={`h-4 w-4 ${urgency.color}`} />
+                            </motion.div>
+                          ) : (
+                            <Clock className={`h-4 w-4 ${urgency.color}`} />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate group-hover:text-primary transition-colors">
+                            {doc.title}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">{doc.signer}</p>
+                        </div>
+                        <span className={`text-[10px] font-semibold whitespace-nowrap ${urgency.color}`}>
+                          {timeLabel}
+                        </span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </motion.div>
+
+      {/* Weekly Activity Heatmap */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, duration: 0.4 }}
+      >
+        <Card className="border-border overflow-hidden">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
+              Weekly Activity Heatmap
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <div className="inline-flex flex-col gap-1">
+                {/* Hour labels row */}
+                <div className="flex gap-1">
+                  <div className="w-10" /> {/* spacer for day labels */}
+                  {hourLabels.map((hour) => (
+                    <div key={hour} className="w-7 text-center text-[9px] text-muted-foreground">
+                      {hour}
+                    </div>
+                  ))}
+                </div>
+                {/* Heatmap rows */}
+                {heatmapData.map((row, dayIdx) => (
+                  <div key={dayIdx} className="flex gap-1 items-center">
+                    <div className="w-10 text-[10px] text-muted-foreground text-right pr-1">
+                      {dayLabels[dayIdx]}
+                    </div>
+                    {row.map((cell) => (
+                      <HeatmapCell key={`${dayIdx}-${cell.hourIdx}`} value={cell.value} maxVal={heatmapMax} />
+                    ))}
+                  </div>
+                ))}
+                {/* Legend */}
+                <div className="flex items-center gap-2 mt-2 ml-11">
+                  <span className="text-[9px] text-muted-foreground">Less</span>
+                  {['bg-muted/20', 'bg-emerald-100 dark:bg-emerald-900/30', 'bg-emerald-300 dark:bg-emerald-700/50', 'bg-emerald-500 dark:bg-emerald-600/70', 'bg-emerald-700 dark:bg-emerald-500'].map((bg, i) => (
+                    <div key={i} className={`w-4 h-4 rounded-sm ${bg}`} />
+                  ))}
+                  <span className="text-[9px] text-muted-foreground">More</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* Bottom section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activity */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.4 }}
+          transition={{ delay: 0.7, duration: 0.4 }}
         >
           <Card className="border-border">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -479,7 +1084,7 @@ export function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 0.4 }}
+          transition={{ delay: 0.8, duration: 0.4 }}
         >
           <Card className="border-border">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -497,6 +1102,7 @@ export function DashboardPage() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05, duration: 0.2 }}
+                    whileHover={{ scale: 1.01, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
                     onClick={() => navigate('document-detail', { id: doc.id })}
                     className="flex items-start gap-3 w-full text-left p-3 rounded-lg border border-border hover:bg-accent/50 hover:shadow-sm transition-all"
                   >
@@ -529,7 +1135,7 @@ export function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 0.4 }}
+          transition={{ delay: 0.9, duration: 0.4 }}
         >
           <Card className="border-border">
             <CardHeader className="flex flex-row items-center justify-between pb-2">

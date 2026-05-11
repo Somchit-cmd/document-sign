@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
@@ -97,14 +98,19 @@ function EnhancedTemplateCard({
           {/* Template preview */}
           <div className="bg-muted/30 rounded-lg border border-border h-36 flex items-center justify-center mb-4 relative overflow-hidden">
             {/* Preview overlay on hover */}
-            <div className={`absolute inset-0 bg-primary/5 backdrop-blur-[2px] flex items-center justify-center transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+            <motion.div
+              className="absolute inset-0 bg-emerald-500/5 backdrop-blur-[2px] flex items-center justify-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: isHovered ? 1 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
               <div className="flex flex-col items-center gap-2">
-                <Button size="sm" className="bg-primary hover:bg-primary/90 shadow-lg">
+                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 shadow-lg">
                   <Eye className="mr-1.5 h-3.5 w-3.5" />
                   Preview
                 </Button>
               </div>
-            </div>
+            </motion.div>
 
             <FileText className="h-12 w-12 text-muted-foreground/30" />
 
@@ -127,7 +133,7 @@ function EnhancedTemplateCard({
           </div>
 
           {/* Info */}
-          <h3 className="text-sm font-medium group-hover:text-primary transition-colors">{template.name}</h3>
+          <h3 className="text-sm font-medium group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{template.name}</h3>
           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{template.description}</p>
 
           {/* Meta */}
@@ -135,7 +141,7 @@ function EnhancedTemplateCard({
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Users className="h-3 w-3" />
-                <span>{template.usageCount} uses</span>
+                <span>{template.usageCount >= 1000 ? `${(template.usageCount / 1000).toFixed(1)}k` : template.usageCount} uses</span>
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
@@ -154,7 +160,7 @@ function EnhancedTemplateCard({
           {/* Creator info */}
           <div className="flex items-center gap-2 mt-2">
             <Avatar className="h-5 w-5">
-              <AvatarFallback className="text-[7px] bg-primary/10 text-primary">
+              <AvatarFallback className="text-[7px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                 {template.createdBy.name.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
@@ -197,15 +203,15 @@ function CreateFromTemplateDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <Sparkles className="h-5 w-5 text-emerald-500" />
             Create from Template
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           {/* Template info */}
           <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
-            <div className="rounded-lg bg-primary/10 p-2">
-              <FileText className="h-5 w-5 text-primary" />
+            <div className="rounded-lg bg-emerald-500/10 p-2">
+              <FileText className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
               <p className="text-sm font-medium">{template.name}</p>
@@ -269,7 +275,7 @@ function CreateFromTemplateDialog({
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button
-              className="bg-primary hover:bg-primary/90"
+              className="bg-emerald-600 hover:bg-emerald-700"
               onClick={handleCreate}
               disabled={!title.trim()}
             >
@@ -363,7 +369,7 @@ export function TemplatesPage() {
               <SelectItem value="updated">Recently Updated</SelectItem>
             </SelectContent>
           </Select>
-          <Button className="bg-primary hover:bg-primary/90">
+          <Button className="bg-emerald-600 hover:bg-emerald-700">
             <LayoutTemplate className="mr-2 h-4 w-4" />
             Create Template
           </Button>
@@ -400,7 +406,9 @@ export function TemplatesPage() {
                 key={cat.value}
                 variant={category === cat.value ? 'secondary' : 'outline'}
                 size="sm"
-                className="shrink-0"
+                className={`shrink-0 transition-all duration-200 ${
+                  category === cat.value ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 shadow-sm' : ''
+                }`}
                 onClick={() => setCategory(cat.value)}
               >
                 {cat.label}
@@ -415,6 +423,38 @@ export function TemplatesPage() {
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </div>
+
+      {/* Recently Used section */}
+      {filteredTemplates.length > 0 && sortBy === 'usage' && (
+        <div>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-emerald-500" />
+            Recently Used
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            {filteredTemplates.slice(0, 4).map((template) => (
+              <motion.div
+                key={template.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-accent/30 cursor-pointer transition-colors"
+                onClick={() => handleUseTemplate(template)}
+              >
+                <div className="rounded-lg bg-emerald-100 dark:bg-emerald-900/30 p-2 shrink-0">
+                  <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{template.name}</p>
+                  <p className="text-[10px] text-muted-foreground capitalize">{template.category} · {template.usageCount >= 1000 ? `${(template.usageCount / 1000).toFixed(1)}k` : template.usageCount} uses</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </motion.div>
+            ))}
+          </div>
+          <Separator className="mb-6" />
+        </div>
+      )}
 
       {/* Loading state */}
       {isLoading ? (

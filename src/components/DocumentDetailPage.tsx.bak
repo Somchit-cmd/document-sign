@@ -173,7 +173,7 @@ function AISummaryTab({ docId }: { docId: string }) {
                   <ul className="space-y-1.5">
                     {keyPoints.map((point, i) => (
                       <li key={i} className="text-sm flex items-start gap-2">
-                        <span className="text-emerald-600 mt-1 shrink-0">&#8226;</span>
+                        <span className="text-emerald-600 mt-1 shrink-0">•</span>
                         <span>{point}</span>
                       </li>
                     ))}
@@ -373,332 +373,106 @@ function AIChatPanel({ docId }: { docId: string }) {
   );
 }
 
-// ====== Document Lifecycle Visualization ======
-function DocumentLifecycle({ document }: { document: Document }) {
-  const stages = [
-    { key: 'draft', label: 'Draft', icon: FileText },
-    { key: 'sent', label: 'Sent', icon: Send },
-    { key: 'viewed', label: 'Viewed', icon: Eye },
-    { key: 'signed', label: 'Signed', icon: PenLine },
-    { key: 'completed', label: 'Completed', icon: CheckCircle2 },
-  ];
-
-  const statusOrder: Record<string, number> = {
-    draft: 0, sent: 1, viewed: 2, signed: 3, completed: 4,
-    rejected: 3, expired: 1, voided: 0,
-  };
-  const currentIndex = statusOrder[document.status] ?? 0;
-
-  return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-1 overflow-x-auto pb-1">
-          {stages.map((stage, i) => {
-            const isCompleted = i < currentIndex;
-            const isCurrent = i === currentIndex;
-            const isFuture = i > currentIndex;
-            const Icon = stage.icon;
-
-            return (
-              <div key={stage.key} className="flex items-center shrink-0">
-                <div className="flex flex-col items-center gap-1">
-                  <motion.div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-500 ${
-                      isCompleted
-                        ? 'bg-emerald-500 text-white shadow-sm'
-                        : isCurrent
-                          ? 'bg-emerald-500 text-white shadow-md'
-                          : 'bg-muted text-muted-foreground border border-border'
-                    }`}
-                    animate={isCurrent ? { scale: [1, 1.15, 1] } : {}}
-                    transition={isCurrent ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : {}}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                    ) : (
-                      <Icon className="h-3.5 w-3.5" />
-                    )}
-                  </motion.div>
-                  <span className={`text-[9px] font-medium whitespace-nowrap ${
-                    isCompleted ? 'text-emerald-600 dark:text-emerald-400'
-                      : isCurrent ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-muted-foreground'
-                  }`}>{stage.label}</span>
-                </div>
-                {i < stages.length - 1 && (
-                  <div className={`w-6 h-0.5 mx-1 mb-4 rounded transition-all duration-500 ${
-                    isCompleted ? 'bg-emerald-500' : isCurrent ? 'bg-emerald-500/50' : 'bg-border'
-                  }`} />
-                )}
-              </div>
-            );
-          })}
-        </div>
-        {document.status === 'rejected' && (
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
-            <XCircle className="h-3.5 w-3.5" />
-            <span className="font-medium">Document was rejected</span>
-          </div>
-        )}
-        {document.status === 'expired' && (
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            <span className="font-medium">Document has expired</span>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ====== Document Timeline (Enhanced) ======
-function DocumentTimeline({ document }: { document: Document }) {
-  const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
-
-  const eventColors: Record<string, { bg: string; text: string }> = {
-    created: { bg: 'bg-teal-500', text: 'text-teal-600 dark:text-teal-400' },
-    sent: { bg: 'bg-cyan-500', text: 'text-cyan-600 dark:text-cyan-400' },
-    viewed: { bg: 'bg-slate-400', text: 'text-slate-600 dark:text-slate-400' },
-    signed: { bg: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
-    approved: { bg: 'bg-green-500', text: 'text-green-600 dark:text-green-400' },
-    rejected: { bg: 'bg-red-500', text: 'text-red-600 dark:text-red-400' },
-    completed: { bg: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
-    expired: { bg: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
-  };
-
+// ====== Activity Timeline (Enhanced) ======
+function ActivityTimeline({ document }: { document: Document }) {
   const timelineEvents = [
-    { id: '1', type: 'created', action: 'Document created', user: document.owner, time: document.createdAt, icon: FileText, detail: `Created by ${document.owner.name} with ${document.pageCount} page(s)` },
-    ...(document.status !== 'draft' ? [{ id: '2', type: 'sent', action: 'Document sent for signature', user: document.sender || document.owner, time: document.createdAt, icon: Send, detail: `Sent to ${document.recipients.length} recipient(s) for review and signature` }] : []),
+    { id: '1', action: 'Document created', user: document.owner, time: document.createdAt, icon: <FileText className="h-3.5 w-3.5 text-white" />, color: 'bg-teal-500' },
+    ...(document.status !== 'draft' ? [{ id: '2', action: 'Document sent for signature', user: document.sender || document.owner, time: document.createdAt, icon: <Send className="h-3.5 w-3.5 text-white" />, color: 'bg-cyan-500' }] : []),
     ...document.recipients
       .filter((r) => r.status === 'viewed' || r.status === 'signed')
       .map((r, i) => ({
         id: `view-${i}`,
-        type: r.status === 'signed' ? 'signed' : 'viewed',
         action: `${r.user.name} ${r.status === 'signed' ? 'signed' : 'viewed'} the document`,
         user: r.user,
         time: r.signedAt || document.updatedAt,
-        icon: r.status === 'signed' ? CheckCircle2 : Eye,
-        detail: r.status === 'signed' ? `Signature captured electronically and verified` : `Document opened and reviewed by ${r.user.name}`,
+        icon: r.status === 'signed' ? <CheckCircle2 className="h-3.5 w-3.5 text-white" /> : <Eye className="h-3.5 w-3.5 text-white" />,
+        color: r.status === 'signed' ? 'bg-emerald-500' : 'bg-slate-400',
       })),
-    ...(document.status === 'completed' ? [{ id: '3', type: 'completed', action: 'Document completed', user: document.owner, time: document.completedAt || document.updatedAt, icon: CheckCircle2, detail: 'All required signatures collected. Document is now legally binding.' }] : []),
-    ...(document.status === 'rejected' ? [{ id: '4', type: 'rejected', action: 'Document rejected', user: document.recipients[0]?.user || document.owner, time: document.updatedAt, icon: XCircle, detail: 'Document was rejected and requires revision before resending.' }] : []),
-  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-
-  // Lifecycle progress
-  const statusOrder: Record<string, number> = { draft: 0, sent: 1, viewed: 2, signed: 3, completed: 4 };
-  const currentStageIndex = statusOrder[document.status] ?? 0;
-  const lifecycleProgress = Math.round((currentStageIndex / 4) * 100);
-
-  // Estimated time remaining
-  const getEstimatedTime = () => {
-    if (document.status === 'completed') return 'Completed';
-    if (document.status === 'rejected' || document.status === 'expired' || document.status === 'voided') return '\u2014';
-    const created = new Date(document.createdAt).getTime();
-    const now = Date.now();
-    const elapsed = now - created;
-    const remainingStages = 4 - currentStageIndex;
-    if (remainingStages <= 0 || currentStageIndex === 0) return '~2-3 days';
-    const avgPerStage = elapsed / currentStageIndex;
-    const estMs = avgPerStage * remainingStages;
-    const estDays = Math.ceil(estMs / (1000 * 60 * 60 * 24));
-    if (estDays <= 0) return '< 1 day';
-    if (estDays === 1) return '~1 day';
-    return `~${estDays} days`;
-  };
+    ...(document.status === 'completed' ? [{ id: '3', action: 'Document completed', user: document.owner, time: document.completedAt || document.updatedAt, icon: <CheckCircle2 className="h-3.5 w-3.5 text-white" />, color: 'bg-emerald-500' }] : []),
+    ...(document.status === 'rejected' ? [{ id: '4', action: 'Document rejected', user: document.recipients[0]?.user || document.owner, time: document.updatedAt, icon: <XCircle className="h-3.5 w-3.5 text-white" />, color: 'bg-red-500' }] : []),
+  ].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
   return (
-    <div className="space-y-4">
-      {/* Progress bar at top */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Document Progress</span>
-          <span className="font-medium">{lifecycleProgress}%</span>
-        </div>
-        <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-          <motion.div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${lifecycleProgress}%` }}
-            transition={{ duration: 1, ease: 'easeOut' }}
-          />
-          {document.status !== 'completed' && document.status !== 'rejected' && document.status !== 'expired' && document.status !== 'voided' && (
-            <motion.div
-              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-background shadow-md"
-              style={{ left: `calc(${lifecycleProgress}% - 6px)` }}
-              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-            />
+    <ScrollArea className="h-96">
+      <div className="relative">
+        <div className="space-y-0">
+          {timelineEvents.map((event, index) => (
+            <div key={event.id} className="flex gap-3 relative">
+              {/* Vertical connector line */}
+              {index < timelineEvents.length - 1 && (
+                <div className="absolute left-[11px] top-6 bottom-0 w-0.5 bg-gradient-to-b from-border to-border/30" />
+              )}
+
+              {/* Dot with icon */}
+              <div className={`shrink-0 w-6 h-6 rounded-full ${event.color} flex items-center justify-center ring-4 ring-background z-10 shadow-sm`}>
+                {event.icon}
+              </div>
+
+              <div className="flex-1 min-w-0 pb-4">
+                <p className="text-sm font-medium">{event.action}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Avatar className="h-5 w-5">
+                    <AvatarFallback className="text-[7px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                      {event.user.name.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs text-muted-foreground">{event.user.name}</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {formatDistanceToNow(new Date(event.time), { addSuffix: true })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+          {timelineEvents.length === 0 && (
+            <div className="text-center py-8">
+              <Clock className="mx-auto h-6 w-6 text-muted-foreground/50 mb-2" />
+              <p className="text-sm text-muted-foreground">No activity yet</p>
+            </div>
           )}
         </div>
-        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>Est. time remaining: <span className="font-medium text-foreground">{getEstimatedTime()}</span></span>
-          <span>{formatDistanceToNow(new Date(document.createdAt), { addSuffix: true })}</span>
-        </div>
       </div>
-
-      <Separator />
-
-      {/* Timeline events */}
-      <ScrollArea className="h-80">
-        <div className="relative">
-          <div className="space-y-0">
-            <AnimatePresence>
-              {timelineEvents.map((event, index) => {
-                const colors = eventColors[event.type] || eventColors.created;
-                const Icon = event.icon;
-                const isExpanded = expandedEvent === event.id;
-
-                return (
-                  <motion.div
-                    key={event.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05, duration: 0.2 }}
-                    className="flex gap-3 relative"
-                  >
-                    {/* Animated connecting line */}
-                    {index < timelineEvents.length - 1 && (
-                      <motion.div
-                        className="absolute left-[13px] top-8 bottom-0 w-0.5"
-                        style={{ background: 'linear-gradient(to bottom, var(--border), transparent)' }}
-                        initial={{ scaleY: 0 }}
-                        animate={{ scaleY: 1 }}
-                        transition={{ delay: index * 0.05 + 0.2, duration: 0.3 }}
-                      />
-                    )}
-
-                    {/* Colored icon dot */}
-                    <div className={`shrink-0 w-7 h-7 rounded-full ${colors.bg} flex items-center justify-center ring-4 ring-background z-10 shadow-sm`}>
-                      <Icon className="h-3.5 w-3.5 text-white" />
-                    </div>
-
-                    {/* Event card */}
-                    <div className="flex-1 min-w-0 pb-4">
-                      <div
-                        className="p-2.5 rounded-lg border bg-card hover:bg-accent/30 transition-colors cursor-pointer"
-                        onClick={() => setExpandedEvent(isExpanded ? null : event.id)}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-medium">{event.action}</p>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {isExpanded ? <ChevronUp className="h-3 w-3 text-muted-foreground" /> : <ChevronDown className="h-3 w-3 text-muted-foreground" />}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Avatar className="h-5 w-5">
-                            <AvatarFallback className="text-[7px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-                              {event.user.name.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs text-muted-foreground">{event.user.name}</span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {formatDistanceToNow(new Date(event.time), { addSuffix: true })}
-                          </span>
-                        </div>
-
-                        {/* Expandable detail */}
-                        <AnimatePresence>
-                          {isExpanded && event.detail && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.2 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="mt-2 pt-2 border-t border-border">
-                                <p className="text-xs text-muted-foreground leading-relaxed">{event.detail}</p>
-                                <div className="flex items-center gap-1.5 mt-1.5">
-                                  <Clock className="h-3 w-3 text-muted-foreground" />
-                                  <span className="text-[10px] text-muted-foreground">{format(new Date(event.time), 'MMM d, yyyy h:mm a')}</span>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-            {timelineEvents.length === 0 && (
-              <div className="text-center py-8">
-                <Clock className="mx-auto h-6 w-6 text-muted-foreground/50 mb-2" />
-                <p className="text-sm text-muted-foreground">No activity yet</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </ScrollArea>
-    </div>
+    </ScrollArea>
   );
 }
 
-// ====== Version History (Enhanced) ======
+// ====== Version History ======
 function VersionHistory({ document }: { document: Document }) {
   const versions = [
-    { id: 'v3', version: 3, label: 'Current version', user: document.owner, time: document.updatedAt, changes: 'Added signature fields', diff: '+2 fields', diffType: 'add' as const },
-    { id: 'v2', version: 2, label: 'Updated', user: document.sender || document.owner, time: document.createdAt, changes: 'Sent for signature', diff: '+3 recipients', diffType: 'add' as const },
-    { id: 'v1', version: 1, label: 'Created', user: document.owner, time: document.createdAt, changes: 'Initial upload', diff: 'New', diffType: 'new' as const },
+    { id: 'v3', version: 3, label: 'Current version', user: document.owner, time: document.updatedAt, changes: 'Added signature fields' },
+    { id: 'v2', version: 2, label: 'Updated', user: document.sender || document.owner, time: document.createdAt, changes: 'Sent for signature' },
+    { id: 'v1', version: 1, label: 'Created', user: document.owner, time: document.createdAt, changes: 'Initial upload' },
   ];
 
   return (
-    <div className="space-y-0 relative">
+    <div className="space-y-3">
       {versions.map((v, i) => (
-        <motion.div
-          key={v.id}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.08, duration: 0.2 }}
-          className="flex items-start gap-3 group relative pb-3"
-        >
-          {/* Timeline connector */}
-          {i < versions.length - 1 && (
-            <div className="absolute left-[15px] top-8 bottom-0 w-0.5 bg-gradient-to-b from-emerald-300 dark:from-emerald-700 to-transparent" />
-          )}
-
-          {/* Version node */}
-          <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold z-10 ring-3 ring-background ${
-            i === 0
-              ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 shadow-sm'
-              : 'bg-muted text-muted-foreground'
-          }`}>
+        <div key={v.id} className="flex items-start gap-3 group">
+          <div className="shrink-0 w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[10px] font-bold text-muted-foreground">
             v{v.version}
           </div>
-
           <div className="flex-1 min-w-0">
-            <div className="p-2 rounded-lg border bg-card hover:bg-accent/20 transition-colors">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium">{v.label}</p>
-                {i === 0 && (
-                  <Badge className="text-[9px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-0">
-                    Current
-                  </Badge>
-                )}
-                {/* Diff indicator */}
-                <Badge variant="outline" className={`text-[8px] ml-auto ${
-                  v.diffType === 'add'
-                    ? 'text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
-                    : 'text-cyan-600 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800'
-                }`}>
-                  {v.diff}
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">{v.label}</p>
+              {i === 0 && (
+                <Badge className="text-[9px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-0">
+                  Current
                 </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">{v.changes}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <Avatar className="h-4 w-4">
-                  <AvatarFallback className="text-[6px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
-                    {v.user.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-[10px] text-muted-foreground">
-                  {v.user.name} · {formatDistanceToNow(new Date(v.time), { addSuffix: true })}
-                </span>
-              </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">{v.changes}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <Avatar className="h-4 w-4">
+                <AvatarFallback className="text-[6px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                  {v.user.name.split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-[10px] text-muted-foreground">
+                {v.user.name} · {formatDistanceToNow(new Date(v.time), { addSuffix: true })}
+              </span>
             </div>
           </div>
-        </motion.div>
+        </div>
       ))}
     </div>
   );
@@ -1093,9 +867,6 @@ export function DocumentDetailPage() {
         </div>
       </div>
 
-      {/* Document Lifecycle visualization */}
-      <DocumentLifecycle document={document} />
-
       {/* Signing progress */}
       {document.recipients.length > 0 && (
         <Card>
@@ -1205,7 +976,7 @@ export function DocumentDetailPage() {
                   <Separator />
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Folder</span>
-                    <span>{document.folder || '\u2014'}</span>
+                    <span>{document.folder || '—'}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between">
@@ -1291,7 +1062,7 @@ export function DocumentDetailPage() {
             </TabsContent>
 
             <TabsContent value="activity" className="mt-3">
-              <DocumentTimeline document={document} />
+              <ActivityTimeline document={document} />
             </TabsContent>
 
             <TabsContent value="sign" className="mt-3">
@@ -1334,14 +1105,25 @@ export function DocumentDetailPage() {
                     </div>
                   ) : (
                     <div className="text-center py-6">
-                      <CheckCircle2 className="mx-auto h-8 w-8 text-muted-foreground/30 mb-3" />
-                      <p className="text-sm text-muted-foreground">
-                        {document.status === 'completed'
-                          ? 'This document has been fully signed'
-                          : document.status === 'draft'
-                            ? 'This document needs to be sent before signing'
-                            : 'Signing is not available for this document'}
-                      </p>
+                      {document.status === 'completed' || document.status === 'signed' ? (
+                        <>
+                          <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500 mb-3" />
+                          <p className="text-sm font-medium">Document Signed</p>
+                          <p className="text-xs text-muted-foreground mt-1">This document has been fully signed</p>
+                        </>
+                      ) : document.status === 'rejected' ? (
+                        <>
+                          <XCircle className="mx-auto h-10 w-10 text-red-500 mb-3" />
+                          <p className="text-sm font-medium">Document Rejected</p>
+                          <p className="text-xs text-muted-foreground mt-1">This document has been rejected</p>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
+                          <p className="text-sm font-medium">Not Ready for Signing</p>
+                          <p className="text-xs text-muted-foreground mt-1">This document is still in draft</p>
+                        </>
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -1353,11 +1135,17 @@ export function DocumentDetailPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs flex items-center gap-1.5">
                     <MessageSquare className="h-3.5 w-3.5" />
-                    Discussion
+                    Comments & AI Chat
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CommentThread docId={docId} comments={comments} />
+                  <Separator className="my-3" />
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Bot className="h-3.5 w-3.5 text-emerald-600" />
+                    <span className="text-xs font-medium">AI Chat</span>
+                  </div>
+                  <AIChatPanel docId={docId} />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -1365,7 +1153,7 @@ export function DocumentDetailPage() {
         </div>
       </div>
 
-      {/* Sign Dialog */}
+      {/* Sign Document Dialog */}
       <Dialog open={signDialogOpen} onOpenChange={setSignDialogOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>

@@ -14,8 +14,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Users,
+  UserCog,
   FileSignature,
   Sparkles,
+  GitBranch,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,19 +38,21 @@ const navGroups = [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { id: 'inbox', label: 'Inbox', icon: Inbox, badge: 'inbox' },
       { id: 'documents', label: 'Documents', icon: FileText, badge: 'docs' },
+      { id: 'contacts', label: 'Contacts', icon: Users },
     ],
   },
   {
     label: 'Tools',
     items: [
       { id: 'templates', label: 'Templates', icon: LayoutTemplate },
+      { id: 'workflow-builder', label: 'Workflows', icon: GitBranch },
       { id: 'audit-logs', label: 'Audit Logs', icon: ShieldCheck },
     ],
   },
   {
     label: 'System',
     items: [
-      { id: 'admin', label: 'Admin', icon: Users },
+      { id: 'admin', label: 'Admin', icon: UserCog },
       { id: 'settings', label: 'Settings', icon: Settings },
     ],
   },

@@ -73,8 +73,8 @@ function getSeverity(action: string): SeverityLevel {
 
 const severityConfig: Record<SeverityLevel, { color: string; bgColor: string; icon: React.ReactNode; label: string }> = {
   info: {
-    color: 'text-blue-600 dark:text-blue-400',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+    color: 'text-teal-600 dark:text-teal-400',
+    bgColor: 'bg-teal-100 dark:bg-teal-900/30',
     icon: <Info className="h-3 w-3" />,
     label: 'Info',
   },
@@ -103,7 +103,7 @@ const actionColors: Record<string, string> = {
   'document.update': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
   'document.archive': 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
   'signature.added': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  'user.login': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  'user.login': 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   'user.created': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   'template.used': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   'template.create': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
@@ -139,7 +139,7 @@ function LogDetailPanel({
       <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-primary" />
+            <ShieldCheck className="h-5 w-5 text-emerald-600" />
             Log Details
           </SheetTitle>
         </SheetHeader>
@@ -166,7 +166,7 @@ function LogDetailPanel({
             <Label className="text-xs text-muted-foreground">User</Label>
             <div className="flex items-center gap-2 mt-1">
               <Avatar className="h-6 w-6">
-                <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                <AvatarFallback className="text-[8px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                   {log.user?.name?.split(' ').map(n => n[0]).join('') || '?'}
                 </AvatarFallback>
               </Avatar>
@@ -332,19 +332,29 @@ export function AuditLogsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Audit Logs</h1>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            Audit Logs
+            <motion.div
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-medium"
+              animate={{ opacity: [1, 0.5, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Live
+            </motion.div>
+          </h1>
           <p className="text-muted-foreground text-sm mt-1">
             Complete audit trail of all system activities
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => refetch()} title="Refresh">
+          <Button variant="ghost" size="icon" onClick={() => refetch()} title="Refresh" className="hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" />
+              <Button variant="outline" size="sm" className="gap-1.5 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">
+                <Download className="h-4 w-4 text-emerald-600" />
                 Export
               </Button>
             </PopoverTrigger>
@@ -517,7 +527,7 @@ export function AuditLogsPage() {
             </TableHeader>
             <TableBody>
               <AnimatePresence mode="popLayout">
-                {filteredLogs.map((log) => {
+                {filteredLogs.map((log, i) => {
                   const severity = getSeverity(log.action);
                   const sevConf = severityConfig[severity];
                   const ipLoc = getIpLocation(log.ipAddress || '');
@@ -529,13 +539,14 @@ export function AuditLogsPage() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className={`cursor-pointer hover:bg-accent/50 border-b border-border transition-colors ${
-                        i % 2 === 0 ? 'bg-muted/10' : ''
-                      }`}
+                      className={`cursor-pointer hover:bg-accent/50 border-b border-border transition-colors border-l-2 ${
+                        severity === 'critical' ? 'border-l-red-500' : severity === 'warning' ? 'border-l-amber-500' : 'border-l-teal-500'
+                      } ${i % 2 === 0 ? 'bg-muted/10' : ''}`}
                       onClick={() => openLogDetail(log)}
+                      whileHover={{ backgroundColor: 'var(--accent)' }}
                     >
                       <TableCell>
-                        <div className={`h-2 w-2 rounded-full ${severity === 'critical' ? 'bg-red-500' : severity === 'warning' ? 'bg-amber-500' : 'bg-blue-500'}`} />
+                        <div className={`h-2 w-2 rounded-full ${severity === 'critical' ? 'bg-red-500' : severity === 'warning' ? 'bg-amber-500' : 'bg-teal-500'}`} />
                       </TableCell>
                       <TableCell>
                         <Badge className={`text-[10px] ${actionColors[log.action] || 'bg-gray-100 text-gray-700'}`}>
@@ -545,7 +556,7 @@ export function AuditLogsPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                            <AvatarFallback className="text-[8px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                               {log.user?.name?.split(' ').map(n => n[0]).join('') || '?'}
                             </AvatarFallback>
                           </Avatar>

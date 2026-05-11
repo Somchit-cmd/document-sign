@@ -204,12 +204,20 @@ function EnhancedDocumentCard({
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
     >
+      <motion.div
+        whileHover={{ scale: 1.02, y: -2 }}
+        transition={{ duration: 0.15 }}
+      >
       <Card
-        className={`card-hover-lift cursor-pointer group relative overflow-hidden rounded-xl ${
-          selected ? 'ring-2 ring-primary shadow-md' : 'border-border'
+        className={`cursor-pointer group relative overflow-hidden rounded-xl transition-shadow duration-200 ${
+          selected ? 'ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/10' : 'border-border hover:shadow-lg hover:shadow-emerald-500/5'
         }`}
         onClick={onClick}
       >
+        {/* Gradient border effect on selected */}
+        {selected && (
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 pointer-events-none" />
+        )}
         {/* Selection checkbox */}
         <div
           className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -281,6 +289,7 @@ function EnhancedDocumentCard({
           </div>
         </CardContent>
       </Card>
+      </motion.div>
     </motion.div>
   );
 }
@@ -308,13 +317,15 @@ function EnhancedDocumentTableRow({
   return (
     <motion.tr
       layout
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
+      transition={{ delay: index * 0.03, duration: 0.2 }}
       className={`cursor-pointer hover:bg-accent/50 border-b border-border transition-colors ${
         isEven ? 'bg-muted/20' : ''
-      } ${selected ? 'bg-primary/5' : ''}`}
+      } ${selected ? 'bg-emerald-500/5 ring-1 ring-inset ring-emerald-500/20' : ''}`}
       onClick={onClick}
+      whileHover={{ backgroundColor: 'var(--accent)' }}
     >
       <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
         <Checkbox checked={selected} onCheckedChange={onToggleSelect} />
@@ -540,7 +551,12 @@ export function DocumentsPage() {
           </p>
         </div>
         <div className={noDocsAtAll ? 'animate-pulse' : ''}>
-          <DocumentUploadDialog />
+          <motion.div
+            animate={noDocsAtAll ? { scale: [1, 1.03, 1] } : {}}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <DocumentUploadDialog />
+          </motion.div>
         </div>
       </div>
 
@@ -552,7 +568,7 @@ export function DocumentsPage() {
             placeholder="Search documents..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-10 transition-shadow duration-200 focus-visible:shadow-[0_0_0_2px_rgba(16,185,129,0.2),0_0_15px_rgba(16,185,129,0.1)]"
           />
         </div>
 

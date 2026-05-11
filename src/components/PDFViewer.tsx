@@ -27,6 +27,7 @@ import {
   SidebarOpen,
   SidebarClose,
 } from 'lucide-react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Configure pdfjs worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -161,11 +162,12 @@ export function PDFViewer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showThumbnails, setShowThumbnails] = useState(true);
   const [pdfError, setPdfError] = useState(false);
+  const [pdfErrorKey, setPdfErrorKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
-  const totalPages = isPlaceholder ? pageCount : numPages;
+  const totalPages = isPlaceholder || pdfError ? pageCount : numPages;
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -176,6 +178,11 @@ export function PDFViewer({
   const onDocumentLoadError = useCallback(() => {
     setPdfError(true);
     setIsLoading(false);
+  }, []);
+
+  const handlePdfErrorBoundaryReset = useCallback(() => {
+    setPdfError(false);
+    setPdfErrorKey((prev) => prev + 1);
   }, []);
 
   const onDocumentLoadStart = useCallback(() => {
@@ -427,18 +434,29 @@ export function PDFViewer({
                             <span className="text-[10px] text-gray-400">{pageNum}</span>
                           </div>
                         ) : (
-                          <Document
-                            file={fileUrl}
-                            onLoadSuccess={() => {}}
-                            className="hidden"
+                          <ErrorBoundary
+                            key={`thumbnail-${pdfErrorKey}`}
+                            onReset={handlePdfErrorBoundaryReset}
+                            fallback={
+                              <div className="aspect-[8.5/11] bg-gray-100 dark:bg-gray-700 rounded-sm flex items-center justify-center">
+                                <span className="text-[10px] text-gray-400">{pageNum}</span>
+                              </div>
+                            }
                           >
-                            <Page
-                              pageNumber={pageNum}
-                              width={100}
-                              renderTextLayer={false}
-                              renderAnnotationLayer={false}
-                            />
-                          </Document>
+                            <Document
+                              file={fileUrl}
+                              onLoadSuccess={() => {}}
+                              onLoadError={onDocumentLoadError}
+                              className="hidden"
+                            >
+                              <Page
+                                pageNumber={pageNum}
+                                width={100}
+                                renderTextLayer={false}
+                                renderAnnotationLayer={false}
+                              />
+                            </Document>
+                          </ErrorBoundary>
                         )}
                       </div>
                       <div
@@ -464,7 +482,7 @@ export function PDFViewer({
           className="flex-1 overflow-auto flex items-start justify-center p-4"
         >
           {isPlaceholder || pdfError ? (
-            // Placeholder mode
+            // Placeholder mode (also used when PDF fails to load)
             <div
               style={{
                 transform: `scale(${scale}) rotate(${rotation}deg)`,
@@ -480,6 +498,13 @@ export function PDFViewer({
                 fileSize={fileSize}
                 signatureAreas={signatureAreas}
               />
+              {pdfError && (
+                <div className="mt-3 text-center">
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    PDF could not be loaded — showing placeholder preview
+                  </p>
+                </div>
+              )}
             </div>
           ) : isLoading ? (
             // Loading state
@@ -491,42 +516,70 @@ export function PDFViewer({
               <Skeleton className="w-[612px] h-[792px] mx-auto" />
             </div>
           ) : (
-            // Real PDF rendering
-            <Document
-              file={fileUrl}
-              onLoadSuccess={onDocumentLoadSuccess}
-              onLoadError={onDocumentLoadError}
-              onLoadStart={onDocumentLoadStart}
-              loading={
-                <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <Loader2 className="h-8 w-8 text-emerald-500 animate-spin" />
-                  <p className="text-sm text-muted-foreground">Loading PDF...</p>
-                  <Skeleton className="w-[612px] h-[792px] mx-auto" />
-                </div>
-              }
-              error={
-                <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <FileText className="h-12 w-12 text-muted-foreground/50" />
-                  <p className="text-sm text-muted-foreground font-medium">Unable to load PDF</p>
-                  <p className="text-xs text-muted-foreground">Showing document placeholder instead</p>
+            // Real PDF rendering — wrapped in ErrorBoundary to catch react-pdf rendering errors
+            <ErrorBoundary
+              key={`pdf-${pdfErrorKey}`}
+              onReset={handlePdfErrorBoundaryReset}
+              fallback={
+                <div
+                  style={{
+                    transform: `scale(${scale}) rotate(${rotation}deg)`,
+                    transformOrigin: 'center top',
+                    transition: 'transform 0.2s ease',
+                  }}
+                >
+                  <PlaceholderPage
+                    pageNum={currentPage}
+                    totalPages={totalPages}
+                    title={title}
+                    fileName={fileName}
+                    fileSize={fileSize}
+                    signatureAreas={signatureAreas}
+                  />
+                  <div className="mt-3 text-center">
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      PDF could not be rendered — showing placeholder preview
+                    </p>
+                  </div>
                 </div>
               }
             >
-              <div
-                style={{
-                  transform: `scale(${scale}) rotate(${rotation}deg)`,
-                  transformOrigin: 'center top',
-                  transition: 'transform 0.2s ease',
-                }}
+              <Document
+                file={fileUrl}
+                onLoadSuccess={onDocumentLoadSuccess}
+                onLoadError={onDocumentLoadError}
+                onLoadStart={onDocumentLoadStart}
+                loading={
+                  <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <Loader2 className="h-8 w-8 text-emerald-500 animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading PDF...</p>
+                    <Skeleton className="w-[612px] h-[792px] mx-auto" />
+                  </div>
+                }
+                error={
+                  <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <FileText className="h-12 w-12 text-muted-foreground/50" />
+                    <p className="text-sm text-muted-foreground font-medium">Unable to load PDF</p>
+                    <p className="text-xs text-muted-foreground">Showing document placeholder instead</p>
+                  </div>
+                }
               >
-                <Page
-                  pageNumber={currentPage}
-                  renderTextLayer={true}
-                  renderAnnotationLayer={true}
-                  className="shadow-lg"
-                />
-              </div>
-            </Document>
+                <div
+                  style={{
+                    transform: `scale(${scale}) rotate(${rotation}deg)`,
+                    transformOrigin: 'center top',
+                    transition: 'transform 0.2s ease',
+                  }}
+                >
+                  <Page
+                    pageNumber={currentPage}
+                    renderTextLayer={true}
+                    renderAnnotationLayer={true}
+                    className="shadow-lg"
+                  />
+                </div>
+              </Document>
+            </ErrorBoundary>
           )}
         </div>
       </div>
