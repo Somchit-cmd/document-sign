@@ -30,6 +30,8 @@ import { ArchivePage } from '@/components/ArchivePage';
 import { CertificatePage } from '@/components/CertificatePage';
 import { TeamLeaderboardPage } from '@/components/TeamLeaderboardPage';
 import { DocumentExpiryPage } from '@/components/DocumentExpiryPage';
+import { DocumentAnnotationsPage } from '@/components/DocumentAnnotationsPage';
+import { DocumentComparisonPage } from '@/components/DocumentComparisonPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -158,6 +160,10 @@ function AppContent() {
         return <CertificatePage />;
       case 'document-expiry':
         return <DocumentExpiryPage />;
+      case 'comparison':
+        return <DocumentComparisonPage />;
+      case 'annotations':
+        return <DocumentAnnotationsPage />;
       default:
         return <DashboardPage />;
     }

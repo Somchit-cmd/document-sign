@@ -92,6 +92,8 @@ import {
   FolderClosed,
   Menu,
   CloudUpload,
+  Table2,
+  AlertCircle,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -731,14 +733,17 @@ export function DocumentsPage() {
   const { navigate } = useAppStore();
   const queryClient = useQueryClient();
 
-  const [view, setView] = useState<'grid' | 'list'>('list');
+  const [view, setView] = useState<'grid' | 'list' | 'table'>('list');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<DocumentStatus[]>([]);
   const [priorityFilter, setPriorityFilter] = useState<DocumentPriority[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [dateRangeFilter, setDateRangeFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('updatedAt');
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [hoveredDoc, setHoveredDoc] = useState<Document | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
   // Folder state
   const [activeFolder, setActiveFolder] = useState('all');
@@ -883,6 +888,18 @@ export function DocumentsPage() {
       docs = docs.filter(d => d.tags?.includes('template'));
     }
 
+    // Date range filter
+    if (dateRangeFilter !== 'all') {
+      const nowMs = Date.now();
+      const cutoff = new Date(
+        dateRangeFilter === 'today' ? nowMs - 24 * 60 * 60 * 1000 :
+        dateRangeFilter === 'week' ? nowMs - 7 * 24 * 60 * 60 * 1000 :
+        dateRangeFilter === 'month' ? nowMs - 30 * 24 * 60 * 60 * 1000 :
+        nowMs - 90 * 24 * 60 * 60 * 1000
+      );
+      docs = docs.filter(d => new Date(d.createdAt).getTime() >= cutoff.getTime());
+    }
+
     // Sort
     docs.sort((a, b) => {
       if (sortBy === 'updatedAt') return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
@@ -897,7 +914,7 @@ export function DocumentsPage() {
     });
 
     return docs;
-  }, [documents, search, statusFilter, priorityFilter, categoryFilter, sortBy, activeFolder]);
+  }, [documents, search, statusFilter, priorityFilter, categoryFilter, dateRangeFilter, sortBy, activeFolder]);
 
   const toggleStatusFilter = (status: DocumentStatus) => {
     setStatusFilter((prev) =>
@@ -933,10 +950,11 @@ export function DocumentsPage() {
     setStatusFilter([]);
     setPriorityFilter([]);
     setCategoryFilter('');
+    setDateRangeFilter('all');
     setActiveFolder('all');
   };
 
-  const hasActiveFilters = statusFilter.length > 0 || priorityFilter.length > 0 || categoryFilter !== '' || activeFolder !== 'all';
+  const hasActiveFilters = statusFilter.length > 0 || priorityFilter.length > 0 || categoryFilter !== '' || dateRangeFilter !== 'all' || activeFolder !== 'all';
 
   // Bulk actions
   const handleBulkArchive = () => {
@@ -1092,8 +1110,47 @@ export function DocumentsPage() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
+              {/* Quick dropdown filters */}
+              <Select value={statusFilter.length > 0 ? statusFilter[0] : 'all'} onValueChange={(v) => { if (v === 'all') setStatusFilter([]); else setStatusFilter([v as DocumentStatus]); }}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {statusOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={priorityFilter.length > 0 ? priorityFilter[0] : 'all'} onValueChange={(v) => { if (v === 'all') setPriorityFilter([]); else setPriorityFilter([v as DocumentPriority]); }}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priorities</SelectItem>
+                  {priorityOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={dateRangeFilter} onValueChange={setDateRangeFilter}>
+                <SelectTrigger className="w-36">
+                  <Calendar className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                  <SelectValue placeholder="Date Range" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="week">This Week</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                  <SelectItem value="quarter">This Quarter</SelectItem>
+                </SelectContent>
+              </Select>
+
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-36">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1116,28 +1173,39 @@ export function DocumentsPage() {
                 Filters
                 {hasActiveFilters && (
                   <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
-                    {statusFilter.length + priorityFilter.length + (categoryFilter ? 1 : 0)}
+                    {statusFilter.length + priorityFilter.length + (categoryFilter ? 1 : 0) + (dateRangeFilter !== 'all' ? 1 : 0)}
                   </Badge>
                 )}
               </Button>
 
-              {/* View toggle */}
+              {/* View toggle - Grid/List/Table with smooth transition */}
               <div className="flex border border-border rounded-md">
                 <Button
                   variant={view === 'grid' ? 'secondary' : 'ghost'}
                   size="icon"
-                  className="h-9 w-9 rounded-r-none btn-click-scale"
+                  className={`h-9 w-9 rounded-r-none btn-click-scale ${view === 'grid' ? 'toolbar-btn-active' : ''}`}
                   onClick={() => setView('grid')}
+                  title="Grid view"
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </Button>
                 <Button
                   variant={view === 'list' ? 'secondary' : 'ghost'}
                   size="icon"
-                  className="h-9 w-9 rounded-l-none btn-click-scale"
+                  className={`h-9 w-9 rounded-none border-x border-border btn-click-scale ${view === 'list' ? 'toolbar-btn-active' : ''}`}
                   onClick={() => setView('list')}
+                  title="List view"
                 >
                   <List className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={view === 'table' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className={`h-9 w-9 rounded-l-none btn-click-scale ${view === 'table' ? 'toolbar-btn-active' : ''}`}
+                  onClick={() => setView('table')}
+                  title="Table view"
+                >
+                  <Table2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -1379,16 +1447,123 @@ export function DocumentsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               <AnimatePresence mode="popLayout">
                 {filteredDocuments.map((doc, i) => (
-                  <EnhancedDocumentCard
+                  <div
                     key={doc.id}
-                    document={doc}
-                    onClick={() => navigate('document-detail', { id: doc.id })}
-                    selected={selectedDocs.has(doc.id)}
-                    onToggleSelect={() => toggleSelectDoc(doc.id)}
-                  />
+                    onMouseEnter={(e) => { setHoveredDoc(doc); setTooltipPos({ x: e.clientX, y: e.clientY }); }}
+                    onMouseLeave={() => { setHoveredDoc(null); setTooltipPos(null); }}
+                  >
+                    <EnhancedDocumentCard
+                      document={doc}
+                      onClick={() => navigate('document-detail', { id: doc.id })}
+                      selected={selectedDocs.has(doc.id)}
+                      onToggleSelect={() => toggleSelectDoc(doc.id)}
+                    />
+                  </div>
                 ))}
               </AnimatePresence>
             </div>
+          ) : view === 'table' ? (
+            /* Compact table view (no expandable rows, just key info) */
+            <Card className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={selectedDocs.size === filteredDocuments.length && filteredDocuments.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Updated</TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <AnimatePresence mode="popLayout">
+                    {filteredDocuments.map((doc, i) => {
+                      const cat = doc.tags?.[0] || doc.folder || 'Document';
+                      const catIcon = getCategoryIcon(cat);
+                      const isEven = i % 2 === 0;
+                      return (
+                        <motion.tr
+                          key={doc.id}
+                          layout
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ delay: i * 0.03, duration: 0.2 }}
+                          className={`cursor-pointer hover:bg-accent/50 border-b border-border transition-colors ${isEven ? 'bg-muted/20' : ''} ${selectedDocs.has(doc.id) ? 'bg-emerald-500/5 ring-1 ring-inset ring-emerald-500/20' : ''}`}
+                          onClick={() => navigate('document-detail', { id: doc.id })}
+                          onMouseEnter={(e) => { setHoveredDoc(doc); setTooltipPos({ x: e.clientX, y: e.clientY }); }}
+                          onMouseLeave={() => { setHoveredDoc(null); setTooltipPos(null); }}
+                        >
+                          <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox checked={selectedDocs.has(doc.id)} onCheckedChange={() => toggleSelectDoc(doc.id)} />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className={`rounded-md p-1 shrink-0 flex items-center justify-center ${catIcon.color}`}>
+                                {catIcon.icon}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate max-w-[200px]">{doc.title}</p>
+                                <p className="text-[10px] text-muted-foreground">{doc.fileName}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-5 w-5">
+                                <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                                  {doc.owner.name.split(' ').map(n => n[0]).join('')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-xs">{doc.owner.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell><StatusBadge status={doc.status} /></TableCell>
+                          <TableCell><PriorityBadge priority={doc.priority} /></TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-[9px] h-4 capitalize px-1.5 py-0">
+                              {cat}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(doc.updatedAt), { addSuffix: true })}
+                          </TableCell>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 btn-click-scale">
+                                  <MoreHorizontal className="h-3.5 w-3.5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate('document-detail', { id: doc.id }); }}>
+                                  <Eye className="mr-2 h-4 w-4" />View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                                  <Send className="mr-2 h-4 w-4" />Send
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={(e) => e.stopPropagation()} className="text-destructive focus:text-destructive">
+                                  <Trash2 className="mr-2 h-4 w-4" />Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </motion.tr>
+                      );
+                    })}
+                  </AnimatePresence>
+                </TableBody>
+              </Table>
+            </Card>
           ) : (
             /* List view */
             <Card className="overflow-hidden">
@@ -1413,20 +1588,95 @@ export function DocumentsPage() {
                 <TableBody>
                   <AnimatePresence mode="popLayout">
                     {filteredDocuments.map((doc, i) => (
-                      <EnhancedDocumentTableRow
+                      <div
                         key={doc.id}
-                        document={doc}
-                        onClick={() => navigate('document-detail', { id: doc.id })}
-                        selected={selectedDocs.has(doc.id)}
-                        onToggleSelect={() => toggleSelectDoc(doc.id)}
-                        index={i}
-                      />
+                        onMouseEnter={(e) => { setHoveredDoc(doc); setTooltipPos({ x: e.clientX, y: e.clientY }); }}
+                        onMouseLeave={() => { setHoveredDoc(null); setTooltipPos(null); }}
+                      >
+                        <EnhancedDocumentTableRow
+                          document={doc}
+                          onClick={() => navigate('document-detail', { id: doc.id })}
+                          selected={selectedDocs.has(doc.id)}
+                          onToggleSelect={() => toggleSelectDoc(doc.id)}
+                          index={i}
+                        />
+                      </div>
                     ))}
                   </AnimatePresence>
                 </TableBody>
               </Table>
             </Card>
           )}
+
+          {/* Document Preview Tooltip */}
+          <AnimatePresence>
+            {hoveredDoc && tooltipPos && (
+              <motion.div
+                initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="tooltip-rich fixed z-[100] rounded-xl p-4 w-72 pointer-events-none"
+                style={{
+                  left: Math.min(tooltipPos.x + 12, window.innerWidth - 300),
+                  top: Math.min(tooltipPos.y + 12, window.innerHeight - 280),
+                }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="rounded-md bg-primary/10 p-1.5 shrink-0">
+                    <FileText className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{hoveredDoc.title}</p>
+                    <p className="text-[10px] text-muted-foreground">{hoveredDoc.fileName}</p>
+                  </div>
+                </div>
+                <div className="divider-gradient my-2" />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Status</span>
+                    <StatusBadge status={hoveredDoc.status} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Priority</span>
+                    <PriorityBadge priority={hoveredDoc.priority} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Owner</span>
+                    <span className="text-xs font-medium">{hoveredDoc.owner.name}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Size</span>
+                    <span className="text-xs">{formatFileSize(hoveredDoc.fileSize)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Updated</span>
+                    <span className="text-xs">{formatDistanceToNow(new Date(hoveredDoc.updatedAt), { addSuffix: true })}</span>
+                  </div>
+                  {hoveredDoc.recipients.length > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">Recipients</span>
+                      <div className="flex -space-x-1">
+                        {hoveredDoc.recipients.slice(0, 3).map((r, ri) => (
+                          <Avatar key={ri} className="h-5 w-5 border border-background">
+                            <AvatarFallback className="text-[7px] bg-primary/10 text-primary">
+                              {r.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                        ))}
+                        {hoveredDoc.recipients.length > 3 && (
+                          <span className="text-[9px] text-muted-foreground ml-2">+{hoveredDoc.recipients.length - 3}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-2 pt-2 border-t border-border">
+                  <p className="text-[10px] text-muted-foreground text-center">Click to view full details</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

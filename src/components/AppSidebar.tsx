@@ -27,6 +27,8 @@ import {
   Timer,
   Trophy,
   Award,
+  GitCompareArrows,
+  PenTool,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +64,8 @@ const navGroups = [
       { id: 'workflow-builder', label: 'Workflows', icon: GitBranch },
       { id: 'approval-chains', label: 'Approvals', icon: GitMerge },
       { id: 'certificates', label: 'Certificates', icon: Award },
+      { id: 'annotations', label: 'Annotations', icon: PenTool },
+      { id: 'comparison', label: 'Compare', icon: GitCompareArrows },
       { id: 'audit-logs', label: 'Audit Logs', icon: ShieldCheck },
       { id: 'reports', label: 'Reports', icon: BarChart3 },
     ],

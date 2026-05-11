@@ -40,6 +40,9 @@ import {
   Eye,
   PenTool,
   ThumbsUp,
+  Users,
+  MapPin,
+  GitCommitHorizontal,
 } from 'lucide-react';
 import {
   BarChart,
@@ -55,6 +58,8 @@ import {
   Legend,
   AreaChart,
   Area,
+  LineChart,
+  Line,
 } from 'recharts';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow, differenceInHours, differenceInDays, format } from 'date-fns';
@@ -198,6 +203,36 @@ const signingVelocityData = Array.from({ length: 14 }, (_, i) => ({
   day: `Day ${i + 1}`,
   signed: Math.floor(Math.random() * 8) + 3 + Math.floor(Math.sin(i / 3) * 2),
 }));
+
+// Signing Velocity Trend: docs signed per day over last 7 days
+const signingVelocityTrendData = [
+  { day: 'Mon', signed: 8 },
+  { day: 'Tue', signed: 12 },
+  { day: 'Wed', signed: 10 },
+  { day: 'Thu', signed: 15 },
+  { day: 'Fri', signed: 11 },
+  { day: 'Sat', signed: 5 },
+  { day: 'Sun', signed: 3 },
+];
+
+// Recent Activity Map: document activity across regions/departments as heat grid
+const activityRegions = ['Sales', 'Legal', 'HR', 'Finance', 'Ops', 'Engineering'];
+const activityActionTypes = ['Signed', 'Approved', 'Created', 'Reviewed', 'Sent'];
+const activityMapData = activityRegions.map((region) =>
+  activityActionTypes.map((action) => ({
+    region,
+    action,
+    value: Math.floor(Math.random() * 20) + 1,
+  }))
+);
+
+// Quick Stats Footer data
+const quickStatsFooterData = [
+  { label: 'Documents This Week', value: 47, icon: FileText, color: 'from-emerald-500 to-teal-600', bgLight: 'bg-emerald-50', bgDark: 'dark:bg-emerald-950/20' },
+  { label: 'Avg Sign Time', value: 2.3, suffix: ' days', decimals: 1, icon: Timer, color: 'from-teal-500 to-cyan-600', bgLight: 'bg-teal-50', bgDark: 'dark:bg-teal-950/20' },
+  { label: 'Pending Approvals', value: 18, icon: ShieldCheck, color: 'from-cyan-500 to-teal-600', bgLight: 'bg-cyan-50', bgDark: 'dark:bg-cyan-950/20' },
+  { label: 'Active Users', value: 24, icon: Users, color: 'from-amber-500 to-orange-600', bgLight: 'bg-amber-50', bgDark: 'dark:bg-amber-950/20' },
+];
 
 // Weekly Activity Heatmap mock data (7 days x 24 hours)
 const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -1695,6 +1730,209 @@ export function DashboardPage() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Recent Activity Map - Document activity across departments */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.0, duration: 0.4 }}
+      >
+        <Card className="border-border overflow-hidden hover-card-glow">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                Recent Activity Map
+              </CardTitle>
+              <span className="text-xs text-muted-foreground">Activity across departments</span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className="text-left text-[10px] font-medium text-muted-foreground pb-2 pr-3">Department</th>
+                    {activityActionTypes.map((action) => (
+                      <th key={action} className="text-center text-[10px] font-medium text-muted-foreground pb-2 px-1">
+                        {action}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {activityMapData.map((row, i) => {
+                    const maxVal = Math.max(...row.map((c) => c.value));
+                    return (
+                      <motion.tr
+                        key={i}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.05 + i * 0.06, duration: 0.3 }}
+                      >
+                        <td className="text-xs font-medium text-muted-foreground py-1.5 pr-3 whitespace-nowrap">{row[0].region}</td>
+                        {row.map((cell, j) => {
+                          const intensity = cell.value / maxVal;
+                          return (
+                            <td key={j} className="px-1 py-1.5">
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: 0.1 + i * 0.06 + j * 0.03, duration: 0.2 }}
+                                className={`w-full h-7 rounded-md flex items-center justify-center text-[10px] font-semibold transition-colors cursor-default ${
+                                  intensity > 0.75
+                                    ? 'bg-emerald-500 text-white dark:bg-emerald-600'
+                                    : intensity > 0.5
+                                      ? 'bg-emerald-300 text-emerald-900 dark:bg-emerald-700/60 dark:text-emerald-100'
+                                      : intensity > 0.25
+                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                        : 'bg-muted/40 text-muted-foreground'
+                                }`}
+                                title={`${cell.region} - ${cell.action}: ${cell.value}`}
+                              >
+                                {cell.value}
+                              </motion.div>
+                            </td>
+                          );
+                        })}
+                      </motion.tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {/* Legend */}
+            <div className="flex items-center gap-2 mt-3 justify-end">
+              <span className="text-[9px] text-muted-foreground">Less</span>
+              {['bg-muted/40', 'bg-emerald-100 dark:bg-emerald-900/30', 'bg-emerald-300 dark:bg-emerald-700/60', 'bg-emerald-500 dark:bg-emerald-600'].map((bg, i) => (
+                <div key={i} className={`w-4 h-4 rounded-sm ${bg}`} />
+              ))}
+              <span className="text-[9px] text-muted-foreground">More</span>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Signing Velocity Trend - Mini chart showing docs signed per day over last 7 days */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.1, duration: 0.4 }}
+      >
+        <Card className="border-border overflow-hidden hover-card-glow">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <GitCommitHorizontal className="h-4 w-4 text-primary" />
+                Signing Velocity Trend
+              </CardTitle>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground">
+                  Total: <span className="font-semibold text-foreground">{signingVelocityTrendData.reduce((a, b) => a + b.signed, 0)}</span> docs
+                </span>
+                <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                  <TrendingUp className="h-3 w-3" />
+                  +8%
+                </span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={140}>
+              <LineChart data={signingVelocityTrendData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="velocityTrendGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+                <XAxis
+                  dataKey="day"
+                  className="text-xs"
+                  tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  className="text-xs"
+                  tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                  formatter={(value: number) => [`${value} docs`, 'Signed']}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="signed"
+                  stroke="#10b981"
+                  strokeWidth={2.5}
+                  dot={{ fill: '#10b981', strokeWidth: 2, stroke: 'var(--card)', r: 4 }}
+                  activeDot={{ r: 6, strokeWidth: 2, fill: '#10b981', stroke: 'var(--card)' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Quick Stats Footer with animated counters */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.2, duration: 0.4 }}
+      >
+        <div className="divider-gradient my-2" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-fade-up">
+          {quickStatsFooterData.map((stat, i) => {
+            const Icon = stat.icon;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 + i * 0.08, duration: 0.35 }}
+                whileHover={{ y: -3, scale: 1.02 }}
+                className="hover-card-glow"
+              >
+                <div className={`rounded-xl border border-border ${stat.bgLight} ${stat.bgDark} p-4 card-shadow-premium transition-all`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`rounded-lg bg-gradient-to-br ${stat.color} p-2 text-white shadow-sm`}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <span className="text-xs text-muted-foreground font-medium">{stat.label}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold tracking-tight count-up-animate">
+                      <AnimatedValue
+                        value={stat.value}
+                        suffix={stat.suffix || ''}
+                        decimals={stat.decimals || 0}
+                      />
+                    </span>
+                  </div>
+                  {/* Mini progress indicator */}
+                  <div className="mt-3 w-full h-1 rounded-full bg-muted/50 overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((stat.value / 50) * 100, 100)}%` }}
+                      transition={{ delay: 0.5 + i * 0.1, duration: 0.8, ease: 'easeOut' }}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </motion.div>
     </div>
   );
 }

@@ -1428,10 +1428,148 @@ Stage Summary:
 - Could add real email notifications integration (SendGrid/Mailgun)
 - Could add real file storage integration (S3/MinIO)
 - Could add PDF annotation/markup tools with canvas drawing
-- Could add document comparison with real diff engine
+- Could add document comparison with real diff engine ✅ DONE (Task 9-b)
 - Could add real-time co-authoring with operational transforms
 - Could add advanced document search with full-text search via Prisma
 - Could add custom dashboard widgets with drag-and-drop layout
 - Could add automated reminder scheduling with cron
 - Could add document version branching and merge
 - Could add more AI-powered features (auto-categorization, risk scoring, clause suggestions)
+
+---
+Task ID: 9-b
+Agent: Document Comparison Developer
+Task: Create Document Comparison page with comprehensive diff analysis features
+
+Work Log:
+- Created `/home/z/my-project/src/components/DocumentComparisonPage.tsx` (~1580 lines) - a full-featured document comparison page
+- Comparison Header: "Document Comparison" title with gradient icon, Document A/B selectors with color indicators (red for A/original, emerald for B/modified), Swap documents button, Compare button with gradient styling, View mode toggle (Side-by-Side | Unified | Differences Only)
+- Side-by-Side View: Two synchronized-scrolling panels with line numbers, color-coded differences (emerald for add, red for remove, amber for modify), click-to-highlight on both sides, mini-map sidebar showing diff locations, max-height with scroll
+- Unified View: Single combined view with inline differences, toggle base document (A or B), expand/collapse unchanged sections with collapsible headers, color-coded line indicators with type badges
+- Differences Only View: Table format (Line # | Type | Document A | Document B | Expand), click to expand context around each change with surrounding lines, color-coded rows per diff type
+- Difference Summary Panel: Total changes count with gradient stat cards, breakdown by additions/deletions/modifications, visual diff bar showing proportion, severity breakdown (Major/Minor/Cosmetic), category breakdown (Header/Body/Terms/Signatures/Dates) with progress bars, export buttons (PDF/CSV)
+- AI Analysis Section: "AI-Powered Change Analysis" card with natural language summary, risk assessment (High/Medium/Low) with colored cards, recommended actions (5 items numbered), compliance impact assessment (GDPR/SOC 2/CCPA/ISO 27001 with status indicators)
+- Selected Diff Detail Panel: Fixed bottom-right floating card showing selected diff details, type/severity/category badges, before/after text display, prev/next navigation
+- Mock Data: Two realistic contract documents (Service Agreement v2.1 and v2.2) with ~50 lines each, containing 15-20 differences of various types (fee changes, SLA improvements, new clauses, signature changes, encryption upgrades, etc.)
+- Diff Engine: Custom computeDiffs algorithm using word-overlap matching to identify unchanged, added, removed, and modified lines with category and severity classification
+- Styling: Glassmorphism effects, gradient borders and shadows, professional diff viewer styling (GitHub/VS Code style), dark mode compatible, responsive design, framer-motion animations
+- Updated `/home/z/my-project/src/app/page.tsx`: Added DocumentComparisonPage import and 'comparison' case
+- Updated `/home/z/my-project/src/components/AppSidebar.tsx`: Added GitCompareArrows icon import and Compare nav item (in Tools group after Certificates)
+- Lint passes with 0 errors
+
+Stage Summary:
+- New Document Comparison page with 3 view modes, diff engine, AI analysis, and comprehensive summary
+- Realistic mock contract documents with 15-20 differences
+- Synchronized scrolling, mini-map, expandable sections, floating diff detail panel
+- Glassmorphism styling, gradient accents, dark mode, responsive
+- Sidebar and routing updated
+- 96+ total features across the platform
+
+---
+Task ID: 9-c
+Agent: Premium Styling Enhancement Agent
+Task: Add 15+ CSS utilities, enhance DashboardPage with new sections, enhance DocumentsPage with view modes and rich tooltips
+
+Work Log:
+- Added 15+ new CSS utility classes to `/home/z/my-project/src/app/globals.css`:
+  - `.annotation-highlight` - Yellow gradient highlight for document annotations
+  - `.diff-added-line` / `.diff-removed-line` / `.diff-modified-line` - Color-coded diff line styles with left border accents
+  - `.panel-slide-left` / `.panel-slide-right` - Panel entrance animations with cubic-bezier easing
+  - `.toolbar-btn-active` - Active toolbar button with emerald gradient background and glow
+  - `.sync-scroll-indicator` - Right-edge gradient indicator for synchronized scrolling
+  - `.minimap-marker` / `.minimap-marker-added` / `.minimap-marker-removed` / `.minimap-marker-modified` - Minimap position markers
+  - `.expand-collapse-btn` / `.expand-collapse-btn.collapsed` - Animated rotation for expand/collapse buttons
+  - `.risk-high` / `.risk-medium` / `.risk-low` - Risk assessment cards with gradient backgrounds and borders
+  - `.change-bar` with shimmer animation - Progress bar with animated shimmer sweep
+  - `.annotation-dot` with pulse animation - Pulsing annotation indicator dots
+  - `.tooltip-rich` - Frosted glass rich tooltip with backdrop blur (light + dark mode)
+  - `.sticky-note` - Yellow sticky note styling with rotation and hover effects
+- Enhanced DashboardPage (`/home/z/my-project/src/components/DashboardPage.tsx`):
+  - Added Recent Activity Map section: Heat grid showing document activity across 6 departments × 5 action types (Signed, Approved, Created, Reviewed, Sent) with intensity-based coloring
+  - Added Signing Velocity Trend mini chart: Line chart showing docs signed per day over last 7 days with gradient stroke, dot indicators, total count, and +8% trend indicator
+  - Added Quick Stats Footer: 4 animated counter cards for Documents This Week (47), Avg Sign Time (2.3 days), Pending Approvals (18), Active Users (24) with gradient icon backgrounds and mini progress bars
+  - Added new icons: Users, MapPin, GitCommitHorizontal
+  - Added LineChart import from recharts
+  - All sections use staggered entry animations and hover-card-glow effects
+- Enhanced DocumentsPage (`/home/z/my-project/src/components/DocumentsPage.tsx`):
+  - Added Table view mode: New third view mode alongside Grid and List, with compact columns (Title, Owner, Status, Priority, Category, Updated)
+  - Enhanced View Mode Toggle: 3-button toggle (Grid/List/Table) with `toolbar-btn-active` styling on active button
+  - Added enhanced filter bar with dropdown filters: Status dropdown, Priority dropdown, Date Range dropdown (All Time/Today/This Week/This Month/This Quarter)
+  - Added dateRangeFilter state and filtering logic in useMemo
+  - Added Document Preview Tooltip on hover: Rich tooltip showing document title, filename, status, priority, owner, file size, last updated, and recipient avatars using `tooltip-rich` CSS class
+  - Tooltip uses framer-motion AnimatePresence for smooth enter/exit transitions
+  - Added `hoveredDoc` and `tooltipPos` state for tooltip tracking
+  - Added Table2 and AlertCircle icons from lucide-react
+- All existing functionality preserved
+- Dark mode compatible throughout
+- Lint passes with 0 errors
+
+Stage Summary:
+- 15+ new CSS utilities added to globals.css for annotations, diffs, panels, risk indicators, tooltips, and sticky notes
+- Dashboard enhanced with 3 new sections: Recent Activity Map, Signing Velocity Trend, Quick Stats Footer
+- Documents page enhanced with 3-view mode toggle (Grid/List/Table), dropdown filters, rich preview tooltip
+- All changes backward compatible, dark mode compatible, and lint-clean
+
+---
+Task ID: 9-a
+Agent: Annotations Developer
+Task: Create PDF Annotation/Markup Tools page
+
+Work Log:
+- Created `/home/z/my-project/src/components/DocumentAnnotationsPage.tsx` - comprehensive PDF annotation/markup tools page
+- **Annotation Toolbar**: 10 tools (Select, Pan, Pen, Highlight, Text, Sticky Note, Rectangle, Oval, Arrow, Eraser) with contextual options
+  - Pen/shape tools: 7-color picker + stroke width slider (1-8px)
+  - Highlight tool: Yellow/Green/Pink color options
+  - Text tool: Text input field + color picker
+  - Sticky Note tool: 4 color options (Yellow/Green/Pink/Blue) + note text input
+  - Undo/Redo buttons with keyboard shortcut support (⌘Z / ⌘⇧Z)
+  - Clear All button with disabled state when no annotations exist
+- **Canvas Area**: Center panel with mock document content (Master Services Agreement contract)
+  - HTML5 Canvas overlay for drawing/rendering annotations (pen strokes, highlights, rectangles, ovals, arrows)
+  - Text and sticky note annotations rendered as HTML overlays on canvas
+  - Zoom controls (50%-200%) with Zoom In/Out/Fit buttons
+  - Page navigation (Page 1 of 3) with prev/next buttons
+  - Bottom status bar showing annotation count, open/resolved counts, collaborator count, document name
+- **Annotations Panel** (right side, w-80):
+  - Tabbed interface: Annotations tab + Properties tab
+  - Annotation filter pills: All + type-specific filters with counts (pen, highlight, text, sticky-note, rectangle, oval, arrow)
+  - Annotation list cards with: type icon + color indicator, annotation text, author avatar + name, color dot, timestamp, reply count, delete button on hover
+  - Selection highlight with primary border and bg
+  - Empty state with contextual message
+  - Reply thread section at bottom: scrollable replies, reply input with Enter-to-submit
+- **Properties Panel** (contextual, shows when annotation selected):
+  - Type & Status header with glassmorphism card
+  - Open/Resolved status badge toggle
+  - Color picker: 10 preset colors + custom color input
+  - Opacity slider (10%-100%)
+  - Stroke width slider (1-8px) for applicable types
+  - Comment textarea
+  - Open/Resolved status toggle buttons
+  - Position info grid (X, Y, W, H)
+  - Delete annotation button
+- **Mock Data**:
+  - 10 pre-existing annotations: 2 pen strokes, 2 highlights, 1 text, 2 sticky notes, 1 rectangle, 1 oval, 1 arrow
+  - 4 authors: Sarah Chen (emerald), Michael Torres (amber), Elena Kowalski (purple), James Park (cyan)
+  - 5 replies across annotations
+  - Sample contract document with 6 sections (Scope, Termination, Compensation, Confidentiality, Liability, Governing Law)
+- **Styling**:
+  - Glassmorphism effects (glass-card class on properties header)
+  - Framer-motion animations: annotation list staggered entry, tool selection with layoutId, property changes, AnimatePresence for tool options
+  - Color-coded annotation type indicators (pen=red, highlight=yellow, text=green, sticky-note=amber, rectangle=cyan, oval=purple, arrow=orange)
+  - Professional enterprise look with emerald/teal accent colors
+  - Dark mode compatible throughout
+  - Responsive design: right panel hidden on mobile (lg:flex)
+- **Integration**:
+  - Updated `/home/z/my-project/src/app/page.tsx`: Added 'annotations' case in renderPage switch
+  - Updated `/home/z/my-project/src/components/AppSidebar.tsx`: Added PenTool icon import and { id: 'annotations', label: 'Annotations', icon: PenTool } in Tools group after Certificates
+- Lint passes with 0 errors
+
+Stage Summary:
+- New DocumentAnnotationsPage with comprehensive PDF annotation/markup tools
+- 10 annotation tool types with contextual options
+- Canvas rendering with HTML5 Canvas + HTML overlays
+- Right-side Annotations panel with filter, list, and reply threads
+- Contextual Properties panel with color, opacity, size, status controls
+- 10 mock annotations, 4 authors, sample contract document
+- Professional styling with glassmorphism, framer-motion, dark mode
+- 89+ features now complete across the platform
